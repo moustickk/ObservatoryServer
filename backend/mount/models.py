@@ -1,0 +1,13 @@
+class MountStatus:
+
+    CONNECTED = "CONNECTED"
+
+    DISCONNECTED = "DISCONNECTED"
+
+    PARKED = "PARKED"
+
+    UNPARKED = "UNPARKED"
+
+    PARKING = "PARKING"
+
+    ERROR = "ERROR"
