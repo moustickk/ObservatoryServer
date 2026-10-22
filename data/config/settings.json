@@ -1,0 +1,12 @@
+{
+  "telescope_driver": "EQMOD.Telescope",
+  "dome_port": 11111,
+  "safety_port": 11112,
+  "max_wind_speed": 40.0,
+  "max_rain_probability": 30,
+  "max_rain_mm": 0.1,
+  "max_cloud_cover": 80,
+  "min_temperature": 0.5,
+  "weather_cache_minutes": 30,
+  "weather_update_seconds": 600
+}
