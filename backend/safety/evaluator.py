@@ -7,44 +7,45 @@ from backend.safety.config import (
 )
 
 
-def evaluate_weather(
-    wind,
-    clouds,
-    rain_probability,
-    rain_mm,
-    current_temp,
-    forecast_temp
-):
+def evaluate_weather(weather):
 
     reasons = []
 
-    if wind > MAX_WIND_SPEED:
+    if weather["wind"] > MAX_WIND_SPEED:
+
         reasons.append(
-            f"VENT ({wind} km/h)"
+            f"VENT ({weather['wind']} km/h)"
         )
 
     if (
-        rain_probability
+        weather["rain_probability"]
         > MAX_RAIN_PROBABILITY
     ):
+
         reasons.append(
-            f"PLUIE ({rain_probability}%)"
+            f"PLUIE ({weather['rain_probability']}%)"
         )
 
-    if rain_mm > MAX_RAIN_MM:
+    if weather["rain_mm"] > MAX_RAIN_MM:
+
         reasons.append(
-            f"PLUIE ({rain_mm} mm)"
+            f"PLUIE ({weather['rain_mm']} mm)"
         )
 
-    if clouds > MAX_CLOUD_COVER:
+    if weather["clouds"] > MAX_CLOUD_COVER:
+
         reasons.append(
-            f"NUAGES ({clouds}%)"
+            f"NUAGES ({weather['clouds']}%)"
         )
 
     if (
-        current_temp <= MIN_TEMPERATURE
-        or forecast_temp <= MIN_TEMPERATURE
+        weather["temperature"]
+        <= MIN_TEMPERATURE
+        or
+        weather["forecast_temperature"]
+        <= MIN_TEMPERATURE
     ):
+
         reasons.append(
             "RISQUE GEL"
         )

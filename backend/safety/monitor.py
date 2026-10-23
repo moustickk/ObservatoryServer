@@ -1,25 +1,27 @@
 import time
-from datetime import datetime
-
-from backend.common.logs import (
-    safety_log
-)
 
 from backend.safety.config import (
-    CACHE_TIMEOUT_MINUTES,
-    UPDATE_INTERVAL
-)
-
-from backend.safety.state import (
-    state_lock,
-    is_safe,
-    current_status,
-    last_good_timestamp,
-    last_weather_update
+    UPDATE_INTERVAL,
+    CACHE_TIMEOUT_MINUTES
 )
 
 from backend.safety.weather_provider import (
     get_weather
+)
+
+from backend.safety.engine import (
+    process_weather
+)
+
+from backend.safety.state import (
+    cache_valid,
+    weather_age_minutes,
+    set_safe,
+    set_unsafe
+)
+
+from backend.common.logs import (
+    safety_log
 )
 
 
@@ -33,20 +35,47 @@ def weather_monitor():
 
         try:
 
-            data = get_weather()
-
-            safety_log(
-                "Weather data received"
+            weather = get_weather()
+            
+            print("Weather receveid:")
+            print(weather)
+            
+            process_weather(
+                weather
             )
 
-            with state_lock:
+            print("Weather processed")
 
-                globals()["last_weather_update"] = (
-                    datetime.now()
+        except Exception as ex:
+
+            if cache_valid(
+                CACHE_TIMEOUT_MINUTES
+            ):
+
+                age = (
+                    weather_age_minutes()
                 )
 
-                globals()["last_good_timestamp"] = (
-                    datetime.now()
+                set_safe(
+                    f"SAFE | CACHE UTILISE ({age} min)"
                 )
 
-        except Exception as
+                safety_log(
+                    f"SAFE | CACHE UTILISE ({age} min)"
+                )
+
+            else:
+
+                set_unsafe(
+                    f"UNSAFE | {ex}"
+                )
+                
+                print(f"ERROR: {ex}")
+                
+                safety_log(
+                    f"UNSAFE | {ex}"
+                )
+
+        time.sleep(
+            UPDATE_INTERVAL
+        )

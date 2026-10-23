@@ -1,18 +1,22 @@
+from backend.safety.status import (
+    get_status
+)
+
+from backend.safety.device_state import (
+    get_device_state
+)
+
+
 class SafetyService:
-
-    def __init__(self):
-
-        self.safe = False
-
-    def set_safe(
-        self,
-        value
-    ):
-
-        self.safe = value
 
     def status(self):
 
-        return {
-            "safe": self.safe
-        }
+        return get_status()
+
+    def device_state(self):
+
+        return get_device_state()
+
+    def is_safe(self):
+
+        return get_status()["safe"]
