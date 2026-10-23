@@ -5,7 +5,7 @@ from backend.common.config import (
 
 TELESCOPE_DRIVER = get(
     "telescope_driver",
-    "EQMOD.Telescope"
+    "EQMOD_SIM.Telescope"
 )
 
 PARK_TIMEOUT = get(

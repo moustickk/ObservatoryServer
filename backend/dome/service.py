@@ -1,19 +1,46 @@
+from backend.dome.config import (
+    SERIAL_PORT,
+    BAUDRATE
+)
+
+from backend.dome.serial_controller import (
+    RoofController
+)
+
+from backend.dome.logging import (
+    log_open,
+    log_close,
+    log_stop
+)
+
+
 class DomeService:
 
     def __init__(self):
 
-        self.connected = False
+        self.roof = RoofController(
+            SERIAL_PORT,
+            BAUDRATE
+        )
 
-    def connect(self):
+    def open(self):
 
-        self.connected = True
+        log_open()
 
-    def disconnect(self):
+        return self.roof.open()
 
-        self.connected = False
+    def close(self):
+
+        log_close()
+
+        return self.roof.close()
+
+    def stop(self):
+
+        log_stop()
+
+        return self.roof.stop()
 
     def status(self):
 
-        return {
-            "connected": self.connected
-        }
+        return self.roof.status()

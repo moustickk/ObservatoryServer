@@ -1,14 +1,11 @@
-from backend.mount.state import (
-    connected,
-    at_park,
-    last_error
+from backend.mount.service import (
+    MountService
 )
 
 
-def get_mount_status():
+_mount = MountService()
 
-    return {
-        "connected": connected,
-        "at_park": at_park,
-        "last_error": last_error
-    }
+
+def ensure_mount_parked():
+
+    return _mount.ensure_parked()
