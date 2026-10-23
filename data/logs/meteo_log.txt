@@ -1,3 +1,19 @@
+[2026-10-23 16:40:23] SAFE | Temp=12.5°C | Vent=33.1 km/h | Nuages=54% | Pluie=0% (0.0 mm)
+[2026-10-23 16:40:23] Weather monitor started
+[2026-10-23 16:32:56] SAFE | Temp=12.5°C | Vent=33.1 km/h | Nuages=54% | Pluie=0% (0.0 mm)
+[2026-10-23 16:32:55] Weather monitor started
+[2026-10-23 16:31:40] SAFE | Temp=12.5°C | Vent=33.1 km/h | Nuages=54% | Pluie=0% (0.0 mm)
+[2026-10-23 16:31:40] Weather monitor started
+[2026-10-23 16:29:47] UNSAFE | '>' not supported between instances of 'float' and 'str'
+[2026-10-23 16:29:46] Weather monitor started
+[2026-10-23 15:28:30] SAFE | Temp=12.8°C | Vent=35.5 km/h | Nuages=69% | Pluie=3% (0.0 mm)
+[2026-10-23 15:28:29] Weather monitor started
+[2026-10-23 15:26:19] SAFE | Temp=12.8°C | Vent=35.5 km/h | Nuages=69% | Pluie=3% (0.0 mm)
+[2026-10-23 15:26:19] Weather monitor started
+[2026-10-23 15:26:06] SAFE | Temp=12.8°C | Vent=35.5 km/h | Nuages=69% | Pluie=3% (0.0 mm)
+[2026-10-23 15:26:06] Weather monitor started
+[2026-10-23 15:20:25] SAFE | Temp=12.8°C | Vent=35.5 km/h | Nuages=69% | Pluie=3% (0.0 mm)
+[2026-10-23 15:20:25] Weather monitor started
 [2026-10-23 14:14:13] SAFE | Temp=13.1°C | Vent=38.9 km/h | Nuages=11% | Pluie=3% (0.0 mm)
 [2026-10-23 14:14:03] SAFE | Temp=13.1°C | Vent=38.9 km/h | Nuages=11% | Pluie=3% (0.0 mm)
 [2026-10-23 14:13:53] SAFE | Temp=13.1°C | Vent=38.9 km/h | Nuages=11% | Pluie=3% (0.0 mm)
