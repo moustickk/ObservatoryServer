@@ -42,6 +42,10 @@ DEFAULT_SETTINGS = {
     "telescope_driver": "EQMOD_SIM.Telescope",
     "park_timeout": 300,
     "park_grace_seconds": 180,
+    # L'agent de sauvegarde peut parquer lui-meme la monture quand la meteo
+    # est dangereuse et que personne ne l'a fait. Jamais sur une commande
+    # interactive : NINA croirait sa monture encore en suivi.
+    "auto_park_mount": False,
     "close_anyway": False,
     "mount_check_mode": "strict",
     "simulation_mount_parked": True,

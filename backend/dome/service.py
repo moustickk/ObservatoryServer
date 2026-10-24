@@ -42,7 +42,9 @@ class DomeService:
         self.state = RoofState(travel_time=settings.get("full_travel_time", 45))
         self.mount_check_mode = settings.get("mount_check_mode", "strict")
         self.close_anyway = bool(settings.get("close_anyway", False))
+        self.park_timeout = float(settings.get("park_timeout", 300))
         self._lock = threading.RLock()
+        self._parking = False
 
     # -- resultats -------------------------------------------------------
 
@@ -184,8 +186,49 @@ class DomeService:
             log.info("Arret demande, etat=%s", state)
             return self._result(True)
 
-    # -- surveillance ----------------------------------------------------
+    # -- monture ---------------------------------------------------------
 
+    def park_mount(self, timeout=None):
+        """Demande le parkage de la monture, sans bloquer l'appelant.
+
+        Le parkage peut durer plusieurs minutes : le faire dans la requete
+        HTTP bloquerait NINA. On lance un thread dedie et on repond tout de
+        suite ; l'etat reel se lit ensuite via `mount.at_park()`.
+        """
+
+        if not hasattr(self.mount, "park"):
+            return self._result(False, "MOUNT_PARK_UNAVAILABLE")
+
+        with self._lock:
+            if self._parking:
+                return self._result(True, "PARKING", "parkage deja en cours")
+
+            self._parking = True
+
+        thread = threading.Thread(
+            target=self._park_mount_worker,
+            args=(timeout,),
+            name="mount-park",
+            daemon=True,
+        )
+        thread.start()
+
+        log.info("Parkage de la monture demande")
+        return self._result(True, "PARKING", "parkage demande")
+
+    def _park_mount_worker(self, timeout):
+        try:
+            if self.mount.park(timeout if timeout is not None else self.park_timeout):
+                log.info("Monture parquee sur demande")
+            else:
+                log.warning("Parkage de la monture non confirme")
+        except Exception:
+            log.exception("Erreur pendant le parkage de la monture")
+        finally:
+            with self._lock:
+                self._parking = False
+
+    # -- surveillance ----------------------------------------------------
     def sync(self):
         """Recopie l'etat publie par le thread serie. Aucun acces au port.
 

@@ -80,6 +80,8 @@ class StubMountLink:
         self.parked = parked
         self.fail = False
         self.calls = 0
+        self.park_calls = 0
+        self.park_result = True
 
     def at_park(self):
         self.calls += 1
@@ -88,8 +90,10 @@ class StubMountLink:
         return self.parked
 
     def park(self, timeout=None):
-        self.parked = True
-        return True
+        self.park_calls += 1
+        if self.park_result:
+            self.parked = True
+        return self.park_result
 
 
 # -- thread serie --------------------------------------------------------
@@ -215,6 +219,28 @@ def test_la_monture_est_lue_en_tache():
         monitor.stop()
 
 
+def test_park_met_a_jour_le_cache():
+    link = StubMountLink(parked=False)
+    monitor = MountMonitor(link, poll_seconds=0.02, stale_seconds=1.0)
+    monitor.start()
+
+    try:
+        deadline = time.monotonic() + 1.0
+        while time.monotonic() < deadline and monitor.at_park() is None:
+            time.sleep(0.01)
+
+        assert monitor.at_park() is False
+
+        assert monitor.park(timeout=1) is True
+
+        # Sans rafraichissement immediat, at_park() resterait None jusqu'au
+        # prochain sondage et le toit serait refuse entre-temps.
+        assert monitor.at_park() is True
+
+    finally:
+        monitor.stop()
+
+
 def test_une_monture_injoignable_devient_indeterminee():
     link = StubMountLink(parked=True)
     monitor = MountMonitor(link, poll_seconds=0.01, stale_seconds=0.1)
@@ -277,11 +303,16 @@ class StubDome:
         return {"ok": True, "state": "STOPPED"}
 
 
-def make_agent(dome, safety, grace=0.1, enabled=True):
+def make_agent(dome, safety, grace=0.1, enabled=True, auto_park=False):
     return BackupAgent(
         dome,
         safety,
-        {"park_grace_seconds": grace, "safety_agent_enabled": enabled},
+        {
+            "park_grace_seconds": grace,
+            "safety_agent_enabled": enabled,
+            "auto_park_mount": auto_park,
+            "park_timeout": 1,
+        },
         grace_poll_seconds=0.01,
     )
 
@@ -367,3 +398,80 @@ def test_agent_desactive_ne_ferme_rien():
     assert agent.tick() == "disabled"
     assert agent.start() is None
     assert dome.closed == 0
+
+
+def test_agent_parque_la_monture_quand_cest_autorise():
+    """Sans personne pour parquer, l'agent le fait avant de fermer."""
+
+    dome = StubDome(state="OPENED", parked=False)
+    agent = make_agent(dome, StubSafety(safe=False), auto_park=True, grace=0.05)
+
+    assert agent.tick() == "closed"
+    assert dome.mount.park_calls == 1
+    assert dome.closed == 1
+
+
+def test_agent_ne_parque_pas_par_defaut():
+    dome = StubDome(state="OPENED", parked=False)
+    agent = make_agent(dome, StubSafety(safe=False), grace=0.02)
+
+    assert agent.tick() == "not_parked"
+    assert dome.mount.park_calls == 0
+    assert dome.closed == 0
+
+
+def test_agent_alarme_si_le_parkage_echoue():
+    dome = StubDome(state="OPENED", parked=False)
+    dome.mount.park_result = False
+    agent = make_agent(dome, StubSafety(safe=False), auto_park=True, grace=0.02)
+
+    assert agent.tick() == "not_parked"
+    assert dome.mount.park_calls == 1
+    assert dome.closed == 0
+    assert dome.state.alarm["code"] == "ROOF_UNSAFE_NOT_PARKED"
+
+
+# -- parkage a la demande ------------------------------------------------
+
+
+class SilentRoof:
+    description = "faux controleur"
+
+    def snapshot(self):
+        return {
+            "state": "CLOSED",
+            "stale": False,
+            "connected": True,
+            "description": self.description,
+            "last_error": None,
+            "age": 0.0,
+        }
+
+    def command(self, name, timeout=5.0):
+        return "CLOSED"
+
+
+def test_park_mount_repond_sans_bloquer(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "backend.common.state.STATE_FILE",
+        tmp_path / "roof_state.json",
+    )
+
+    from backend.dome.service import DomeService
+
+    mount = StubMountLink(parked=False)
+    dome = DomeService(SilentRoof(), mount, {"full_travel_time": 48})
+
+    started = time.monotonic()
+    result = dome.park_mount(timeout=1)
+    elapsed = time.monotonic() - started
+
+    assert result["ok"] is True
+    # Le parkage part en tache de fond : l'appelant n'attend pas le driver.
+    assert elapsed < 0.5
+
+    deadline = time.monotonic() + 2.0
+    while mount.park_calls == 0 and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    assert mount.park_calls == 1

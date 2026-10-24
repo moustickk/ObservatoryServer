@@ -104,6 +104,18 @@ def dome_stop():
     return _command(_services().dome.stop())
 
 
+# -- monture -------------------------------------------------------------
+
+@app.post("/api/mount/park")
+def mount_park():
+    return _command(_services().dome.park_mount())
+
+
+@app.get("/api/mount/status")
+def mount_status():
+    return _services().dome.status()["mount"]
+
+
 # -- securite ------------------------------------------------------------
 
 

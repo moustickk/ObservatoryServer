@@ -47,6 +47,8 @@ class BackupAgent:
         self.grace_seconds = float(settings.get("park_grace_seconds", 180))
         self.grace_poll_seconds = float(grace_poll_seconds)
         self.enabled = bool(settings.get("safety_agent_enabled", True))
+        self.auto_park = bool(settings.get("auto_park_mount", False))
+        self.park_timeout = float(settings.get("park_timeout", 300))
         self.stop_event = stop_event or threading.Event()
 
         self._handled = False
@@ -156,6 +158,31 @@ class BackupAgent:
 
         if getattr(self.dome, "mount_check_mode", "strict") == "disabled":
             return True
+
+        if self.dome.mount.at_park() is True:
+            return True
+
+        # Parkage automatique : uniquement ici, jamais sur une commande
+        # interactive. L'appel se fait dans ce thread (pas dans une requete
+        # HTTP) et le driver n'est interroge que par le thread COM.
+        if self.auto_park:
+            log.warning(
+                "Meteo dangereuse et monture non parquee : envoi de Park() "
+                "(delai %.0f s)",
+                self.park_timeout,
+            )
+
+            try:
+                if self.dome.mount.park(self.park_timeout):
+                    log.info("Monture parquee par l'agent de sauvegarde")
+                    return True
+            except Exception:
+                log.exception("Echec du parkage automatique")
+
+            log.error(
+                "Park() non confirme : on retombe sur l'attente de %.0f s",
+                self.grace_seconds,
+            )
 
         deadline = time.monotonic() + self.grace_seconds
         logged = False

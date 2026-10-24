@@ -166,12 +166,15 @@ class MountMonitor:
     def _handle_park(self, request):
         try:
             request.ok = bool(self.link.park(request.timeout))
+            # Un parkage confirme est une valeur connue, pas une inconnue :
+            # publier None ici ferait croire a un etat indetermine pendant
+            # tout un cycle de sondage (et bloquerait le toit au passage).
+            self._publish(True if request.ok else None)
         except Exception as ex:
             request.error = str(ex)
             request.ok = False
-        finally:
-            # Le parkage a change l'etat : on force une relecture.
             self._publish(None)
+        finally:
             request.done.set()
 
     def _loop(self):

@@ -74,6 +74,11 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **Le firmware est l'autorité sur la sécurité du toit.** Les fins de course,
   le temps de trajet maximal et la détection de non-mouvement sont traités
   par l'Arduino ; le serveur ne fait que demander et lire.
+- **Parkage automatique réservé à l'agent de sauvegarde** (`auto_park_mount`).
+  Il n'est jamais déclenché par une commande interactive : NINA croirait sa
+  monture encore en suivi, et un `Park()` peut durer plusieurs minutes.
+  L'endpoint `POST /api/mount/park` permet un parkage explicite, sans bloquer
+  la requête.
 - **Changement de sens refusé** par le firmware (`ER:BUSY`) : il faut un
   `STOP` explicite. Le serveur n'improvise pas d'arrêt à la place de
   l'opérateur.
@@ -101,7 +106,8 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 ## Configuration actuelle (`data/config/settings.json`)
 
 - `simulation: false` **actuellement, pour l'essai réel du 24/10** ;
-  `safety_agent_enabled: false` pendant l'essai (à remettre à `true` après).
+  `safety_agent_enabled: true` (remis après l'essai) ;
+  `auto_park_mount: true` (installation non surveillée).
   En service normal : `simulation: false`, agent activé.
 - `serial_port: COM4`, `baudrate: 115200`
 - `full_travel_time: 48`, `max_travel_time: 50` (= `ROOF_MAX_TRAVEL_MS`)
@@ -117,6 +123,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 ```
 
 - http://localhost:11111/api/health
+- http://localhost:11111/api/mount/park (POST, parkage non bloquant)
 - http://localhost:11111/docs
 - http://localhost:11111/management/v1/configureddevices
 
@@ -170,7 +177,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **67 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **73 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Phase 4 vérifiée en conditions réelles de serveur :
@@ -186,6 +193,10 @@ tests/
   comme après 21 000 (ratio ×1,05), là où l'ancien code relisait tout à
   chaque ligne. 200 écritures depuis 8 threads : aucune perdue. Journaux
   réels vérifiés après redémarrage (`roof.log`, `meteo_log.txt`).
+- **Essai réel du 24/10**, `simulation: false` : toit sur COM4, monture
+  EQMOD_SIM (`AtPark = True`). Ouverture puis fermeture commandées depuis
+  NINA (18:54:13 puis 18:55:37), retour en `CLOSED`, position 0, aucune
+  alarme, lien sain. Aucun refus 1035 : l'interlock n'a pas gêné la séquence.
 - Firmware réellement **compilé** avec `arduino-cli` (noyau `arduino:avr`
   1.8.8, cible Uno) : 4 484 octets de flash, 345 octets de RAM, aucune erreur.
 - **Firmware réellement téléversé et exécuté** sur l'Arduino Nano (COM4),
