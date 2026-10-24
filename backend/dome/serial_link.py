@@ -144,7 +144,21 @@ class SerialRoofLink(RoofLink):
         self._ser = None
         self._last_error = None
         self._last_attempt = 0.0
-        self._connect()
+
+        # On tente l'ouverture, mais un echec n'est PAS definitif : le port
+        # peut etre encore tenu par l'instance precedente (redemarrage) ou
+        # l'Arduino debranche. Le thread serie retentera, et le serveur se
+        # remettra seul en ligne quand le port redeviendra disponible.
+        try:
+            self._connect()
+        except Exception as ex:
+            self._last_error = str(ex)
+            log.warning(
+                "Ouverture de %s impossible (%s) : nouvelle tentative au "
+                "prochain cycle",
+                self.description,
+                ex,
+            )
 
     # -- interne ---------------------------------------------------------
 

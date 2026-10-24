@@ -38,7 +38,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 5 | terminée | météo fail-safe : jamais SAFE sur panne, rafales, pire cas de la fenêtre |
 | 6 | terminée | journalisation : ajout O(1), verrou par fichier, purge horaire |
 | 7 | terminée | chemins compatibles installation (`%ProgramData%`) + schéma de configuration |
-| 8 | terminée | interface web locale (état, météo, commandes, configuration) |
+| 8 | terminée | interface web locale (état, météo, commandes, configuration, scan des pilotes ASCOM) |
 | 9 | à faire | tray app, PyInstaller, installateur Inno Setup, démarrage auto |
 | 10 | à faire | atelier Arduino via `arduino-cli` |
 | 11 | à faire | recette et documentation utilisateur |
@@ -74,6 +74,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **Le firmware est l'autorité sur la sécurité du toit.** Les fins de course,
   le temps de trajet maximal et la détection de non-mouvement sont traités
   par l'Arduino ; le serveur ne fait que demander et lire.
+- **Le lien série se rétablit seul.** Une ouverture de COM4 impossible au
+  démarrage (port encore tenu par l'instance précédente, Arduino débranché)
+  n'est plus définitive : `SerialRoofLink` retente au cycle suivant. C'est ce
+  qui permet au redémarrage depuis l'interface de retrouver le toit.
 - **Parkage automatique réservé à l'agent de sauvegarde** (`auto_park_mount`).
   Il n'est jamais déclenché par une commande interactive : NINA croirait sa
   monture encore en suivi, et un `Park()` peut durer plusieurs minutes.
@@ -139,6 +143,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/health
 - http://localhost:11111/api/config/schema (types, groupes, descriptions)
 - http://localhost:11111/api/server/restart (POST, relance apres configuration)
+- http://localhost:11111/api/mount/drivers (pilotes ASCOM installes)
 - http://localhost:11111/api/mount/park (POST, parkage non bloquant)
 - http://localhost:11111/docs
 - http://localhost:11111/management/v1/configureddevices
@@ -197,7 +202,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **91 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **94 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, interface web). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.

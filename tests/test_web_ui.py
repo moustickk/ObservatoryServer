@@ -45,6 +45,7 @@ def test_le_javascript_appelle_les_endpoints_reels():
         "/api/dome/stop",
         "/api/mount/park",
         "/api/server/restart",
+        "/api/mount/drivers",
     ):
         assert endpoint in js, endpoint
 
@@ -66,6 +67,7 @@ def test_les_endpoints_appeles_existent_vraiment():
         "/api/dome/stop",
         "/api/mount/park",
         "/api/server/restart",
+        "/api/mount/drivers",
     ):
         assert endpoint in routes, endpoint
 

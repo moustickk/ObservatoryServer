@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from backend import container
 from backend.common import settings_manager
 from backend.common.restart import schedule_restart
+from backend.mount.drivers import list_drivers
 from backend.common.alpaca.server import router as alpaca_router
 from backend.common.config_api import get_config, get_schema
 from backend.common.config_update_api import (
@@ -193,6 +194,19 @@ def mount_park():
 @app.get("/api/mount/status")
 def mount_status():
     return _services().dome.status()["mount"]
+
+
+@app.get("/api/mount/drivers")
+def mount_drivers():
+    """Pilotes ASCOM de monture installes, pour le selecteur de l'interface."""
+
+    drivers = list_drivers()
+
+    return {
+        "count": len(drivers),
+        "drivers": drivers,
+        "current": settings_manager.get("telescope_driver", ""),
+    }
 
 
 # -- securite ------------------------------------------------------------

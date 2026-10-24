@@ -148,6 +148,25 @@ def test_serial_sans_reponse_leve_LinkError():
         link.send("STATUS")
 
 
+def test_un_port_indisponible_nempeche_pas_le_demarrage(monkeypatch):
+    """Au redemarrage, COM4 peut etre encore tenu : on doit pouvoir demarrer."""
+
+    import serial as pyserial
+
+    def refuse(*args, **kwargs):
+        raise pyserial.SerialException("acces refuse (port deja ouvert)")
+
+    monkeypatch.setattr(pyserial, "Serial", refuse)
+
+    link = SerialRoofLink("COM99", 115200)
+
+    assert link.connected is False
+    assert link.last_error
+
+    with pytest.raises(LinkError):
+        link.send("STATUS")
+
+
 # -- machine a etats simulee (regles du firmware) -------------------------
 
 

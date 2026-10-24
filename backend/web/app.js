@@ -262,7 +262,26 @@ function fieldElement(item) {
       input.value = item.value;
     }
 
-    wrapper.append(label, input);
+    wrapper.append(label);
+
+    // Le pilote de monture se choisit dans une liste : on evite de taper un
+    // ProgID au clavier et de se tromper d'une lettre.
+    if (item.key === "telescope_driver") {
+      const row = document.createElement("div");
+      row.className = "inline";
+      row.append(input);
+
+      const scan = document.createElement("button");
+      scan.type = "button";
+      scan.className = "scan";
+      scan.textContent = "Scanner";
+      scan.addEventListener("click", () => scanDrivers(input, scan, wrapper));
+      row.append(scan);
+
+      wrapper.append(row);
+    } else {
+      wrapper.append(input);
+    }
   }
 
   input.id = `cfg-${item.key}`;
@@ -327,8 +346,59 @@ async function loadConfig() {
   renderConfig(result.data);
 }
 
-function currentValue(input) {
-  if (input.type === "checkbox") {
+async function scanDrivers(input, button, wrapper) {
+  button.disabled = true;
+  button.textContent = "…";
+
+  try {
+    const result = await api("/api/mount/drivers");
+
+    if (!result.ok) {
+      show($("config-error"), `Scan des pilotes impossible (${result.status})`);
+      return;
+    }
+
+    const drivers = (result.data || {}).drivers || [];
+
+    if (!drivers.length) {
+      show(
+        $("config-error"),
+        "Aucun pilote ASCOM de monture trouvé. Vérifier l'installation du pilote et de la plateforme ASCOM.",
+      );
+      return;
+    }
+
+    hide($("config-error"));
+
+    let select = wrapper.querySelector("select.driver-list");
+
+    if (!select) {
+      select = document.createElement("select");
+      select.className = "driver-list";
+      select.addEventListener("change", () => {
+        if (select.value) {
+          input.value = select.value;
+        }
+      });
+      wrapper.append(select);
+    }
+
+    select.replaceChildren();
+    select.append(new Option("— choisir un pilote —", ""));
+
+    for (const driver of drivers) {
+      select.append(new Option(`${driver.name} — ${driver.prog_id}`, driver.prog_id));
+    }
+
+    const known = drivers.some((driver) => driver.prog_id === input.value);
+    select.value = known ? input.value : "";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Scanner";
+  }
+}
+
+function currentValue(input) {  if (input.type === "checkbox") {
     return input.checked ? "true" : "false";
   }
   return input.value;

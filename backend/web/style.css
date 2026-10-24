@@ -184,6 +184,14 @@ legend {
   color: var(--text);
   font-size: 14px;
 }
+.inline { display: flex; gap: 6px; align-items: center; }
+.inline input { flex: 1; min-width: 0; }
+button.scan {
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+select.driver-list { margin-top: 6px; font-size: 13px; }
 .field input:focus, .field select:focus { outline: 2px solid #1f6feb; outline-offset: 1px; }
 .field.check { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
 .field.check .desc { flex-basis: 100%; }

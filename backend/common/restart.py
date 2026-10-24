@@ -52,7 +52,24 @@ port = int(sys.argv[1])
 root = sys.argv[2]
 deadline = time.time() + float(sys.argv[3])
 log_path = sys.argv[4]
+parent = int(sys.argv[5])
 
+# 1. Attendre la FIN du processus courant, pas seulement la liberation du
+#    port HTTP. Pendant son arret, uvicorn cesse d'ecouter avant que le
+#    lifespan n'ait ferme le port serie : demarrer a ce moment-la donne un
+#    PermissionError sur COM4 et un serveur sans toit.
+try:
+    import ctypes
+
+    SYNCHRONIZE = 0x00100000
+    handle = ctypes.windll.kernel32.OpenProcess(SYNCHRONIZE, False, parent)
+    if handle:
+        ctypes.windll.kernel32.WaitForSingleObject(handle, 20000)
+        ctypes.windll.kernel32.CloseHandle(handle)
+except Exception:
+    pass
+
+# 2. Verifier malgre tout que le port est libre.
 while time.time() < deadline:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -69,7 +86,7 @@ while time.time() < deadline:
 else:
     sys.exit(1)
 
-time.sleep(0.3)
+time.sleep(0.5)
 
 # Le nouveau serveur n'a pas de console : on conserve sa sortie dans un
 # fichier, sinon tout diagnostic serait perdu apres un redemarrage.
@@ -105,6 +122,7 @@ def _spawn_restarter(port, wait_seconds=PORT_WAIT_SECONDS):
             str(APP_DIR),
             str(float(wait_seconds)),
             str(LOG_DIR / "server.log"),
+            str(os.getpid()),
         ],
         cwd=str(APP_DIR),
         creationflags=flags,
