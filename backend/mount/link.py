@@ -4,8 +4,9 @@ Le module dome n'a besoin que de deux informations :
  - la monture est-elle parquee ? (`at_park`)
  - peut-on la parquer ? (`park`)
 
-La phase 4 deplacera ces appels dans un thread COM dedie ; en attendant ils
-sont serialises par un verrou et bornes dans le temps.
+La phase 4 a deplace ces appels dans un thread COM dedie (`mount.monitor`) :
+les methodes d'`AscomMountLink` doivent donc etre appelees depuis ce thread,
+qui possede l'appartement COM et garde l'instance du driver ouverte.
 """
 
 import logging
@@ -72,7 +73,18 @@ class SimulatedMountLink(MountLink):
 
 
 class AscomMountLink(MountLink):
-    """Pilotage de la monture via le driver ASCOM (EQMOD)."""
+    """Pilotage de la monture via le driver ASCOM (EQMOD).
+
+    Cette classe doit etre appelee depuis un thread ayant initialise COM
+    (`CoInitialize`) : c'est le cas du thread `mount-com` de `MountMonitor`.
+    Elle n'initialise plus COM elle-meme et **conserve** l'instance du driver.
+
+    Conserver l'instance n'est pas un detail : la version precedente ouvrait
+    le driver a chaque lecture et le relachait aussitot, si bien que
+    `GetActiveObject` ne trouvait plus rien et qu'une **nouvelle** instance
+    etait creee toutes les deux secondes. Avec un vrai EQMOD, cela revenait a
+    se reconnecter en boucle a la monture.
+    """
 
     CACHE_SECONDS = 2.0
     PROBE_BACKOFF_SECONDS = 5.0
@@ -82,6 +94,7 @@ class AscomMountLink(MountLink):
         self.park_timeout = float(park_timeout)
         self.description = driver
         self._lock = threading.RLock()
+        self._scope = None
         self._at_park = None
         self._at_park_at = 0.0
         self._next_probe = 0.0
@@ -89,7 +102,7 @@ class AscomMountLink(MountLink):
 
     # -- interne ---------------------------------------------------------
 
-    def _open_scope(self):
+    def _connect_scope(self):
         """Reutilise l'instance de NINA si elle existe, sinon en cree une."""
 
         try:
@@ -104,16 +117,24 @@ class AscomMountLink(MountLink):
 
         return scope
 
+    def _get_scope(self):
+        """Instance du driver, conservee entre les lectures."""
+
+        if self._scope is not None:
+            try:
+                if self._scope.Connected:
+                    return self._scope
+            except Exception:
+                pass
+
+        self._scope = self._connect_scope()
+        return self._scope
+
     def _read_at_park(self):
         if not ASCOM_AVAILABLE:
             raise RuntimeError("pywin32 indisponible")
 
-        pythoncom.CoInitialize()
-        try:
-            scope = self._open_scope()
-            return bool(scope.AtPark)
-        finally:
-            pythoncom.CoUninitialize()
+        return bool(self._get_scope().AtPark)
 
     # -- API -------------------------------------------------------------
 
@@ -156,9 +177,8 @@ class AscomMountLink(MountLink):
         limit = float(timeout if timeout is not None else self.park_timeout)
 
         with self._lock:
-            pythoncom.CoInitialize()
             try:
-                scope = self._open_scope()
+                scope = self._get_scope()
 
                 if scope.AtPark:
                     self._at_park = True
@@ -188,9 +208,6 @@ class AscomMountLink(MountLink):
                 self._next_probe = time.monotonic() + self.PROBE_BACKOFF_SECONDS
                 mount_log(f"Erreur Park() : {ex}")
                 return False
-
-            finally:
-                pythoncom.CoUninitialize()
 
 
 def build_mount_link(settings):

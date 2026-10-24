@@ -100,7 +100,9 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 
 ## Configuration actuelle (`data/config/settings.json`)
 
-- `simulation: true`, `server_port: 11111`
+- `simulation: false` **actuellement, pour l'essai réel du 24/10** ;
+  `safety_agent_enabled: false` pendant l'essai (à remettre à `true` après).
+  En service normal : `simulation: false`, agent activé.
 - `serial_port: COM4`, `baudrate: 115200`
 - `full_travel_time: 48`, `max_travel_time: 50` (= `ROOF_MAX_TRAVEL_MS`)
 - trajet mesuré : 47,64 s ouverture, 47,11 s fermeture (marge 2,4 s)
