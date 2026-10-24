@@ -49,6 +49,10 @@ DEFAULT_SETTINGS = {
     "close_anyway": False,
     "mount_check_mode": "strict",
     "simulation_mount_parked": True,
+    # L'interface web et l'API de commande ne repondent qu'aux clients de la
+    # machine locale. Alpaca (/api/v1/...) reste joignable depuis le reseau,
+    # pour NINA. A desactiver si l'on veut piloter depuis une tablette.
+    "ui_local_only": True,
     # --- Meteo / securite ---
     "max_wind_speed": 60,
     "max_wind_gust": 70,
@@ -81,6 +85,7 @@ SETTING_INFO = {
     "server_port": ("general", "Port HTTP unique (API REST, Alpaca, management)."),
     "dome_unique_id": ("general", "Identifiant Alpaca stable du Dome. Le changer cree un appareil en double dans NINA."),
     "safety_unique_id": ("general", "Identifiant Alpaca stable du SafetyMonitor."),
+    "ui_local_only": ("general", "L'interface web et les commandes ne repondent qu'aux clients de la machine locale."),
     # toit
     "serial_port": ("toit", "Port serie de l'Arduino (par exemple COM4)."),
     "baudrate": ("toit", "Debit de la liaison serie ; doit correspondre au firmware."),

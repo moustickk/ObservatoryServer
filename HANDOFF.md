@@ -38,7 +38,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 5 | terminée | météo fail-safe : jamais SAFE sur panne, rafales, pire cas de la fenêtre |
 | 6 | terminée | journalisation : ajout O(1), verrou par fichier, purge horaire |
 | 7 | terminée | chemins compatibles installation (`%ProgramData%`) + schéma de configuration |
-| 8 | à faire | interface web locale |
+| 8 | terminée | interface web locale (état, météo, commandes, configuration) |
 | 9 | à faire | tray app, PyInstaller, installateur Inno Setup, démarrage auto |
 | 10 | à faire | atelier Arduino via `arduino-cli` |
 | 11 | à faire | recette et documentation utilisateur |
@@ -86,6 +86,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   `TIMEOUT`, `NO_MOTION` ou `LIMITS`. Aucune autre commande n'efface un
   défaut.
 - Interface finale : **UI web locale** servie par FastAPI, pas de Qt.
+  `GET /ui/`. Elle est restreinte aux clients de la machine locale par
+  défaut (`ui_local_only`) : `/api/dome/open` ouvre un toit, cela ne doit pas
+  être joignable depuis n'importe quelle machine du réseau. Les routes Alpaca
+  (`/api/v1/...`) restent ouvertes, sinon NINA ne pourrait plus commander.
 - Packaging prévu : **PyInstaller `onedir` + Inno Setup**, en **tray app**
   (jamais un service Windows : l'accès COM/ASCOM exige la session utilisateur).
 - Données d'installation : `%ProgramData%\ObservatoryServer\`. En
@@ -124,6 +128,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 .\.venv\Scripts\python.exe -m backend.run_api
 ```
 
+- http://localhost:11111/ui/ (interface, locale uniquement)
 - http://localhost:11111/api/health
 - http://localhost:11111/api/config/schema (types, groupes, descriptions)
 - http://localhost:11111/api/mount/park (POST, parkage non bloquant)
@@ -157,6 +162,10 @@ backend/
     agent.py             agent de sauvegarde (ferme sur UNSAFE)
     weather_provider.py  Open-Meteo, pire cas de la fenêtre
     evaluator.py         seuils
+  web/
+    index.html           interface locale (état, météo, commandes, config)
+    style.css
+    app.js               sans dépendance, hors ligne
     service.py           façade SafetyService
 firmware/
   RoofController.ino     firmware du toit (protocole OK:/ER:/EVT:)
@@ -180,10 +189,13 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **84 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **90 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
-  schéma de configuration). Lancer avec
+  schéma de configuration, interface web). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
+- Interface web vérifiée au rendu réel (Edge headless, 1280 px) : état,
+  météo, commandes et les 26 réglages groupés. Écriture de configuration
+  testée de bout en bout (200 / 404 / 400 avec message).
 - Phase 4 vérifiée en conditions réelles de serveur :
   - 20 lectures `shutterstatus` consécutives : médiane **3,4 ms**, max 6,1 ms
     (aucun accès série dans la requête) ;
@@ -233,8 +245,9 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 8** : interface web locale (servie par FastAPI, à partir de
-   `/api/config/schema`).
+1. **Phase 9** : tray app, PyInstaller, installateur Inno Setup, démarrage
+   automatique. L'interface web devra être embarquée dans le bundle
+   (`backend/web`).
 2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
    `simulation_mount` séparés et un moyen de neutraliser l'agent de
    sauvegarde pendant l'essai.

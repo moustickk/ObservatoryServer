@@ -6,11 +6,14 @@ conteneur. Le serveur demarre donc meme sans Arduino ni monture.
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend import container
+from backend.common import settings_manager
 from backend.common.alpaca.server import router as alpaca_router
 from backend.common.config_api import get_config, get_schema
 from backend.common.config_update_api import (
@@ -46,6 +49,52 @@ app = FastAPI(
 # Management + Dome + SafetyMonitor, sur le meme port que l'API REST.
 app.include_router(alpaca_router)
 
+# Interface web locale, servie par le meme serveur : aucune installation
+# supplementaire, aucun acces reseau externe.
+WEB_DIR = Path(__file__).resolve().parent / "web"
+app.mount("/ui", StaticFiles(directory=WEB_DIR, html=True), name="ui")
+
+
+# -- acces local ----------------------------------------------------------
+#
+# L'interface et les commandes du toit ne doivent pas etre accessibles a
+# n'importe qui sur le reseau : /api/dome/open ouvre un toit. Les routes
+# Alpaca (/api/v1/...) restent ouvertes, sinon NINA ne pourrait plus
+# commander l'observatoire depuis une autre machine.
+
+LOCAL_HOSTS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+
+LOCAL_ONLY_PREFIXES = ("/ui", "/docs", "/redoc", "/openapi.json")
+
+
+def requires_local_client(path):
+    if path.startswith("/api/v1/"):
+        return False
+
+    if path.startswith("/api/"):
+        return True
+
+    return path.startswith(LOCAL_ONLY_PREFIXES)
+
+
+@app.middleware("http")
+async def local_only_ui(request: Request, call_next):
+    if (
+        settings_manager.get("ui_local_only", True)
+        and requires_local_client(request.url.path)
+    ):
+        host = request.client.host if request.client else None
+
+        if host not in LOCAL_HOSTS:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "Interface locale uniquement (ui_local_only)",
+                },
+            )
+
+    return await call_next(request)
+
 
 def _services():
     return container.get_services()
@@ -73,6 +122,7 @@ def root():
         "application": APP_NAME,
         "version": VERSION,
         "simulation": services.simulation,
+        "ui": "/ui/",
     }
 
 

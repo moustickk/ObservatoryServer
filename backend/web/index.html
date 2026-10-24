@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Observatoire — toit roulant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="title">
+      <h1>Observatoire</h1>
+      <span class="subtitle">toit roulant</span>
+    </div>
+    <div class="tags">
+      <span id="mode" class="tag">…</span>
+      <span id="link" class="tag">…</span>
+      <span id="updated" class="tag muted">—</span>
+    </div>
+  </header>
+
+  <div id="alarm" class="alarm hidden" role="alert"></div>
+  <div id="notice" class="notice hidden" role="status"></div>
+
+  <main>
+
+    <section class="card" id="dome-card">
+      <div class="card-head">
+        <h2>Toit</h2>
+        <span id="state" class="badge">…</span>
+      </div>
+
+      <div class="position">
+        <div class="bar"><div id="position-fill"></div></div>
+        <span id="position-text">—</span>
+      </div>
+
+      <dl class="facts">
+        <div><dt>Liaison</dt><dd id="dome-link">—</dd></div>
+        <div><dt>Monture</dt><dd id="mount">—</dd></div>
+      </dl>
+
+      <div class="actions">
+        <button id="btn-open" class="primary">Ouvrir</button>
+        <button id="btn-stop" class="warn">Arrêter</button>
+        <button id="btn-close" class="success">Fermer</button>
+        <button id="btn-park" class="ghost">Parquer la monture</button>
+      </div>
+
+      <p id="action-error" class="error hidden"></p>
+    </section>
+
+    <section class="card" id="weather-card">
+      <div class="card-head">
+        <h2>Météo</h2>
+        <span id="safe" class="badge">…</span>
+      </div>
+
+      <p id="weather-status" class="status-line">—</p>
+
+      <dl class="grid">
+        <div><dt>Vent</dt><dd id="w-wind">—</dd></div>
+        <div><dt>Rafales</dt><dd id="w-gust">—</dd></div>
+        <div><dt>Pluie</dt><dd id="w-rain">—</dd></div>
+        <div><dt>Cumul</dt><dd id="w-mm">—</dd></div>
+        <div><dt>Nuages</dt><dd id="w-clouds">—</dd></div>
+        <div><dt>Température</dt><dd id="w-temp">—</dd></div>
+        <div><dt>Âge mesure</dt><dd id="w-age">—</dd></div>
+        <div><dt>Dernière</dt><dd id="w-last">—</dd></div>
+      </dl>
+
+      <p class="hint">
+        L'agent de sauvegarde ferme le toit quand la météo est UNSAFE.
+        Son état est indiqué par le badge ci-dessus.
+      </p>
+    </section>
+
+    <section class="card wide" id="config-card">
+      <div class="card-head">
+        <h2>Configuration</h2>
+        <div class="config-actions">
+          <button id="btn-reload" class="ghost">Recharger</button>
+          <button id="btn-save" class="primary">Enregistrer</button>
+        </div>
+      </div>
+
+      <p id="config-error" class="error hidden"></p>
+      <p id="config-restart" class="notice hidden">
+        Réglages enregistrés. Un redémarrage du serveur est nécessaire pour
+        qu'ils prennent effet.
+      </p>
+
+      <form id="config-form" autocomplete="off"><!-- rempli par app.js --></form>
+    </section>
+
+  </main>
+
+  <footer>
+    <a href="/docs" target="_blank" rel="noreferrer">API</a>
+    <a href="/api/health" target="_blank" rel="noreferrer">/api/health</a>
+    <a href="/management/v1/configureddevices" target="_blank" rel="noreferrer">Alpaca</a>
+    <span id="footer-version" class="muted"></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
