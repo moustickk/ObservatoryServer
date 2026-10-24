@@ -46,6 +46,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 ## Commits
 
 ```
+badf019 Phase 6 : journalisation en ajout, verrou par fichier, purge horaire
 a166c1c Phase 5 : meteo fail-safe, rafales et pire cas de la fenetre
 7c930bb Phase 4 : threads dedies serie et COM, grace de parkage, agent de sauvegarde
 e23f9c6 Reglages reels mesures sur le toit et securite firmware a 50 s
