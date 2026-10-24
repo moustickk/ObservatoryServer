@@ -370,7 +370,60 @@ async function saveConfig() {
   }
 
   if (changed) {
-    show($("config-restart"), `${changed} réglage(s) enregistré(s).`);
+    show(
+      $("config-restart"),
+      `${changed} réglage(s) enregistré(s). Redémarrage nécessaire pour les appliquer.`,
+    );
+  }
+}
+
+// -- redemarrage ---------------------------------------------------------
+
+async function waitForServer() {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    try {
+      const result = await api("/api/health");
+      if (result.ok) {
+        window.location.reload();
+        return;
+      }
+    } catch {
+      // serveur encore arrete : on reessaie
+    }
+  }
+
+  show($("config-error"), "Le serveur ne répond pas après 60 s.");
+}
+
+async function restartServer() {
+  if (
+    !confirm(
+      "Redémarrer le serveur ?\n\nLa configuration enregistrée sera appliquée. " +
+        "Le toit ne doit pas être en mouvement.",
+    )
+  ) {
+    return;
+  }
+
+  hide($("config-error"));
+
+  try {
+    const result = await api("/api/server/restart", { method: "POST" });
+
+    if (!result.ok) {
+      const data = result.data || {};
+      show($("config-error"), data.message || data.detail || `Refus (${result.status})`);
+      return;
+    }
+
+    show($("config-restart"), "Redémarrage du serveur… la page va se recharger.");
+    await waitForServer();
+  } catch (error) {
+    // Le serveur peut couper la connexion avant de repondre : c'est normal.
+    show($("config-restart"), "Redémarrage du serveur…");
+    await waitForServer();
   }
 }
 
@@ -385,6 +438,7 @@ $("btn-park").addEventListener("click", () =>
 
 $("btn-save").addEventListener("click", saveConfig);
 $("btn-reload").addEventListener("click", loadConfig);
+$("btn-restart").addEventListener("click", restartServer);
 
 loadConfig();
 refresh();

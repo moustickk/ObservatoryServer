@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend import container
 from backend.common import settings_manager
+from backend.common.restart import schedule_restart
 from backend.common.alpaca.server import router as alpaca_router
 from backend.common.config_api import get_config, get_schema
 from backend.common.config_update_api import (
@@ -129,6 +130,34 @@ def root():
 @app.get("/api/health")
 def health():
     return health_snapshot(_services())
+
+
+@app.post("/api/server/restart")
+def server_restart():
+    """Relance le serveur pour appliquer la configuration.
+
+    Refuse si le toit bouge : couper la liaison au milieu d'un trajet laisse
+    le firmware seul maitre du mouvement, sans que le serveur puisse en
+    rendre compte.
+    """
+
+    state = _services().dome.state.get("state")
+
+    if state in ("OPENING", "CLOSING"):
+        return JSONResponse(
+            status_code=409,
+            content={
+                "ok": False,
+                "message": f"Toit en mouvement ({state}) : redemarrage refuse",
+            },
+        )
+
+    schedule_restart(settings_manager.get_int("server_port", 11111))
+
+    return JSONResponse(
+        status_code=202,
+        content={"ok": True, "message": "redemarrage programme"},
+    )
 
 
 # -- toit ----------------------------------------------------------------

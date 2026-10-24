@@ -85,6 +85,13 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **`STOP` acquitte un défaut.** C'est le geste de reprise après un
   `TIMEOUT`, `NO_MOTION` ou `LIMITS`. Aucune autre commande n'efface un
   défaut.
+- **Redémarrage depuis l'interface** (`POST /api/server/restart`) : un
+  processus détaché attend que le port soit libre puis relance le serveur ;
+  arrêt gracieux par SIGINT, sortie forcée après 6 s. Refusé si le toit est
+  en mouvement. La sortie du nouveau serveur va dans `data/logs/server.log`
+  (le processus relancé n'a plus de console). Limite : suppose un lancement
+  par `python -m backend.run_api` ; l'exe empaqueté devra passer par la tray
+  app (phase 9).
 - Interface finale : **UI web locale** servie par FastAPI, pas de Qt.
   `GET /ui/`. Elle est restreinte aux clients de la machine locale par
   défaut (`ui_local_only`) : `/api/dome/open` ouvre un toit, cela ne doit pas
@@ -131,6 +138,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/ui/ (interface, locale uniquement)
 - http://localhost:11111/api/health
 - http://localhost:11111/api/config/schema (types, groupes, descriptions)
+- http://localhost:11111/api/server/restart (POST, relance apres configuration)
 - http://localhost:11111/api/mount/park (POST, parkage non bloquant)
 - http://localhost:11111/docs
 - http://localhost:11111/management/v1/configureddevices
@@ -189,7 +197,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **90 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **91 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, interface web). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
