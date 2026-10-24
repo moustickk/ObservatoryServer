@@ -8,6 +8,7 @@ import logging
 import threading
 
 from backend.common import settings_manager
+from backend.common.alpaca.discovery import DiscoveryResponder
 from backend.dome.monitor import start_monitor
 from backend.dome.serial_link import build_roof_link
 from backend.dome.service import DomeService
@@ -35,9 +36,15 @@ class Services:
         self.dome = DomeService(self.roof_link, self.mount_link, self.settings)
         self.safety = SafetyService()
 
+        self.discovery = DiscoveryResponder(
+            alpaca_port=self.settings.get("server_port", 11111)
+        )
+
         self.threads = []
 
     def start(self):
+        self.discovery.start()
+
         self.threads.append(start_monitor(self.dome, self.stop_event))
 
         weather = threading.Thread(
@@ -58,6 +65,7 @@ class Services:
 
     def stop(self):
         self.stop_event.set()
+        self.discovery.stop()
         self.roof_link.close()
         log.info("Services arretes")
 

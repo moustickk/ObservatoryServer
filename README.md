@@ -17,8 +17,9 @@ Serveur de pilotage d'un observatoire à toit roulant, exposé à terme en
 
 - **Phase 1 — terminée** : le serveur démarre et se pilote **sans matériel**
   (mode simulation), configuration validée, interlock monture actif.
-- **Phase 2 — à venir** : couche Alpaca (Dome + SafetyMonitor, découverte UDP).
-  Tant qu'elle n'est pas là, NINA ne voit pas encore les devices.
+- **Phase 2 — terminée** : couche **ASCOM Alpaca** — device *Dome*,
+  device *SafetyMonitor*, management et découverte UDP 32227. NINA peut
+  désormais découvrir et connecter les deux devices.
 
 ## Installation
 
@@ -34,7 +35,33 @@ python -m venv .venv
 ```
 
 Le serveur écoute sur `http://localhost:11111` (réglage `server_port`).
-C'est aussi le port qui servira à Alpaca.
+C'est aussi le port Alpaca : management, Dome et SafetyMonitor sont exposés
+sur ce même port.
+
+## Connexion depuis NINA
+
+Deux possibilités :
+
+1. **Découverte automatique** — NINA diffuse `alpacadiscovery1` sur UDP
+   `32227`, le serveur répond `{"AlpacaPort": 11111}`. Le device apparaît
+   dans la liste Alpaca.
+2. **Saisie manuelle** — adresse `127.0.0.1` (ou l'IP du PC), port `11111`.
+
+Devices exposés :
+
+| Type Alpaca | DeviceNumber | Rôle |
+|---|---|---|
+| `Dome` | 0 | Toit roulant (ouverture / fermeture) |
+| `SafetyMonitor` | 0 | Sécurité météo (`IsSafe`) |
+
+Correspondances du Dome : `OPENED`→0, `CLOSED`→1, `OPENING`→2, `CLOSING`→3,
+`STOPPED`/`ERROR`/`UNKNOWN`→4. `AtPark` et `AtHome` signifient « toit fermé ».
+Le toit n'a pas de rotation : `Azimuth`/`Altitude` valent 0 et les méthodes
+de rotation renvoient `1024` (NotImplemented).
+
+Un refus d'interlock remonte à NINA en **erreur Alpaca 1035**
+(InvalidOperation) avec le message explicite. `SetPark`, `FindHome`,
+`SlewToAzimuth` et `SyncToAzimuth` renvoient `1024`.
 
 ## Mode simulation
 
@@ -63,6 +90,8 @@ serveur démarre quand même avec un toit `UNKNOWN` et refuse toute commande.
 
 ## API actuelle
 
+### API REST de l'observatoire
+
 | Méthode | Route | Rôle |
 |---|---|---|
 | GET | `/` | Version + mode simulation |
@@ -75,6 +104,20 @@ serveur démarre quand même avec un toit `UNKNOWN` et refuse toute commande.
 | GET | `/api/safety/device_state` | Détails météo |
 | GET | `/api/config` | Réglages courants |
 | POST | `/api/config/{clé}/{valeur}` | Modifier un réglage (validé, 400/404) |
+
+### Alpaca
+
+| Route | Rôle |
+|---|---|
+| `/management/v1/apiversions` | Versions d'API supportées (`[3]`) |
+| `/management/v1/description` | Identité du serveur |
+| `/management/v1/configureddevices` | Liste des devices + UniqueID |
+| `/api/v1/dome/0/...` | Device Dome (InterfaceVersion 3) |
+| `/api/v1/safetymonitor/0/...` | Device SafetyMonitor (InterfaceVersion 1) |
+
+Toutes les réponses respectent l'enveloppe Alpaca
+(`Value`, `ClientTransactionID`, `ServerTransactionID`, `ErrorNumber`,
+`ErrorMessage`).
 
 ## Outils manuels
 
@@ -94,6 +137,7 @@ backend/
   app.py                 API FastAPI, aucun accès matériel à l'import
   container.py           construction des services au démarrage
   common/                config validée, état atomique, chemins, santé
+  common/alpaca/         management, Dome, SafetyMonitor, découverte UDP
   dome/                  lien série (réel/simulé), service, état, surveillance
   mount/                 lien ASCOM (réel/simulé), interlock de parkage
   safety/                météo Open-Meteo, évaluateur, Safety Monitor

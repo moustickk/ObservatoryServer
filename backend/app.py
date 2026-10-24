@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from backend import container
+from backend.common.alpaca.server import router as alpaca_router
 from backend.common.config_api import get_config
 from backend.common.config_update_api import (
     InvalidSettingValue,
@@ -41,6 +42,9 @@ app = FastAPI(
     version=VERSION,
     lifespan=lifespan,
 )
+
+# Management + Dome + SafetyMonitor, sur le meme port que l'API REST.
+app.include_router(alpaca_router)
 
 
 def _services():
