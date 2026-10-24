@@ -36,7 +36,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 3 | terminée | firmware robuste : `OK:`/`EVT:`, anti-rebond, rampes, parseur non bloquant |
 | 4 | terminée | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
 | 5 | terminée | météo fail-safe : jamais SAFE sur panne, rafales, pire cas de la fenêtre |
-| 6 | à faire | journalisation (fin du O(n²) de `write_log`) |
+| 6 | terminée | journalisation : ajout O(1), verrou par fichier, purge horaire |
 | 7 | à faire | schéma de configuration + chemins compatibles installation |
 | 8 | à faire | interface web locale |
 | 9 | à faire | tray app, PyInstaller, installateur Inno Setup, démarrage auto |
@@ -167,8 +167,8 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **62 tests** (protocole série, machine à états simulée, threads
-  dédiés, agent de sauvegarde, météo fail-safe). Lancer avec
+- `pytest` : **67 tests** (protocole série, machine à états simulée, threads
+  dédiés, agent de sauvegarde, météo fail-safe, journalisation). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Phase 4 vérifiée en conditions réelles de serveur :
   - 20 lectures `shutterstatus` consécutives : médiane **3,4 ms**, max 6,1 ms
@@ -179,6 +179,10 @@ tests/
 - Phase 5 vérifiée contre l'API réelle : rafales **54 km/h** relevées (champ
   ignoré auparavant), fenêtre d'une heure, verdict `UNSAFE` cohérent
   (pluie 100 %, 1,1 mm, nuages 100 %).
+- Phase 6 : coût d'écriture **constant** (~0,6 ms/ligne) après 1 000 lignes
+  comme après 21 000 (ratio ×1,05), là où l'ancien code relisait tout à
+  chaque ligne. 200 écritures depuis 8 threads : aucune perdue. Journaux
+  réels vérifiés après redémarrage (`roof.log`, `meteo_log.txt`).
 - Firmware réellement **compilé** avec `arduino-cli` (noyau `arduino:avr`
   1.8.8, cible Uno) : 4 484 octets de flash, 345 octets de RAM, aucune erreur.
 - **Firmware réellement téléversé et exécuté** sur l'Arduino Nano (COM4),
@@ -194,7 +198,6 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Pièges connus (non corrigés)
 
-- `write_log` réécrit tout le fichier à chaque ligne : O(n²). Phase 6.
 - Le firmware n'a pas d'encodeur : un toit déplacé à la main hors tension
   n'est pas détecté (la position serveur reste l'ancienne).
 - Une butée collée n'est détectée qu'en tentant de quitter la position
@@ -209,8 +212,8 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 6** : journaux (`write_log` en O(n²), un fichier réécrit à chaque
-   ligne).
+1. **Phase 7** : schéma de configuration + chemins compatibles installation
+   (`%ProgramData%\ObservatoryServer\`).
 2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
    `simulation_mount` séparés et un moyen de neutraliser l'agent de
    sauvegarde pendant l'essai.
