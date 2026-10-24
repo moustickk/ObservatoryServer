@@ -39,7 +39,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 6 | terminée | journalisation : ajout O(1), verrou par fichier, purge horaire |
 | 7 | terminée | chemins compatibles installation (`%ProgramData%`) + schéma de configuration |
 | 8 | terminée | interface web locale (état, météo, commandes, configuration, scan des pilotes ASCOM) |
-| 9 | à faire | tray app, PyInstaller, installateur Inno Setup, démarrage auto |
+| 9 | en cours | tray app et PyInstaller faits ; installateur Inno Setup à faire |
 | 10 | à faire | atelier Arduino via `arduino-cli` |
 | 11 | à faire | recette et documentation utilisateur |
 
@@ -93,6 +93,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **`STOP` acquitte un défaut.** C'est le geste de reprise après un
   `TIMEOUT`, `NO_MOTION` ou `LIMITS`. Aucune autre commande n'efface un
   défaut.
+- **Tray app superviseur.** Le serveur est un processus enfant de l'icône,
+  jamais un service Windows (COM/ASCOM exige la session utilisateur). Code de
+  sortie 0 = quitter, 75 = relancer : c'est le superviseur qui relance, ce qui
+  remplace le processus intermédiaire en mode empaqueté.
 - **Redémarrage depuis l'interface** (`POST /api/server/restart`) : un
   processus détaché attend que le port soit libre puis relance le serveur ;
   arrêt gracieux par SIGINT, sortie forcée après 6 s. Refusé si le toit est
@@ -152,10 +156,33 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/docs
 - http://localhost:11111/management/v1/configureddevices
 
+## Empaquetage
+
+```powershell
+packaging\build.cmd -Clean      # ou packaging\build.ps1
+```
+
+Produit `dist\ObservatoryServer\ObservatoryServer.exe` (`onedir`). En
+exécution, les données vont dans `%ProgramData%\ObservatoryServer\` :
+`config\settings.json`, `logs\server.log`, `logs\tray.log`,
+`state\roof_state.json`.
+
+Vérifié en vrai : exécutable lancé sur un dossier de données temporaire
+(port 11112, simulation), interface servie, journaux écrits, et redémarrage
+supervisé (code 75) relançant un processus neuf en 2 s.
+
+Un fichier de configuration enregistré avec un BOM UTF-8 (Notepad) était
+déclaré illisible et remplacé par les valeurs par défaut, donc en simulation.
+La lecture tolère désormais le BOM (`utf-8-sig`), pour la configuration comme
+pour l'état persistant.
+
 ## Architecture
 
 ```
+launcher.py              point d'entrée : icône (défaut) ou --server
 backend/
+  server.py              run_server() partagé dev/exe, code de sortie 75
+  tray.py                icône, supervision, menu
   app.py                 FastAPI, lifespan, aucune initialisation matérielle à l'import
   run_api.py             point d'entrée uvicorn
   container.py           construit et démarre les services
@@ -188,6 +215,11 @@ firmware/
   RoofController.ino     firmware du toit (protocole OK:/ER:/EVT:)
   roof_config.h          brochage, temporisations, vitesses
   README.md              câblage, protocole, essai au banc, réglages
+packaging/
+  ObservatoryServer.spec recette PyInstaller
+  build.ps1 / build.cmd  construction
+  make_icon.py           génération de l'icône
+assets/observatory.ico   icône de l'exe et de la tray
 tests/
   test_roof_protocol.py  34 tests sans matériel (protocole, simulation, service)
 ```
@@ -206,7 +238,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **96 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **102 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, interface web). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.

@@ -35,11 +35,31 @@ from backend.common.paths import APP_DIR, LOG_DIR
 
 log = logging.getLogger(__name__)
 
+# Code de sortie conventionnel : « relance-moi ». Le superviseur (tray app)
+# le distingue d'un arret normal (0).
+RESTART_EXIT_CODE = 75
+
+SUPERVISOR_ENV = "OBSERVATORY_SUPERVISED"
+
+# Positionne des qu'un redemarrage est demande, pour que le processus sorte
+# avec le bon code une fois uvicorn arrete proprement.
+restart_requested = threading.Event()
+
 RESTART_DELAY_SECONDS = 0.7
 
 FORCE_EXIT_SECONDS = 6.0
 
 PORT_WAIT_SECONDS = 30.0
+
+
+def supervised():
+    """True si un superviseur (tray app) peut nous relancer."""
+
+    if os.environ.get(SUPERVISOR_ENV):
+        return True
+
+    # Executable empaquete : c'est la tray app qui lance le serveur.
+    return bool(getattr(sys, "frozen", False))
 
 
 _RESTARTER = r"""
@@ -141,16 +161,38 @@ def _shutdown():
         _force_exit()
 
 
-def _force_exit():
+def _force_exit(code=0):
 
     logging.shutdown()
-    os._exit(0)
+    os._exit(code)
 
 
 def schedule_restart(port, delay=RESTART_DELAY_SECONDS):
-    """Programme l'arret gracieux puis la relance. Retourne immediatement."""
+    """Programme l'arret gracieux puis la relance. Retourne immediatement.
+
+    Deux modes :
+
+    - **supervise** (executable, ou variable d'environnement posee par la
+      tray app) : on sort avec `RESTART_EXIT_CODE` et c'est le superviseur
+      qui relance. Il n'y a pas de processus intermediaire ;
+    - **developpement** : un processus detache attend la fin du serveur puis
+      relance `backend.run_api`.
+    """
 
     log.warning("Redemarrage du serveur demande (port %s)", port)
+
+    if supervised():
+
+        restart_requested.set()
+
+        graceful = threading.Timer(delay, _shutdown)
+        graceful.daemon = True
+        graceful.start()
+
+        forced = threading.Timer(delay + FORCE_EXIT_SECONDS, _force_exit, args=(RESTART_EXIT_CODE,))
+        forced.daemon = True
+        forced.start()
+        return
 
     _spawn_restarter(port)
 

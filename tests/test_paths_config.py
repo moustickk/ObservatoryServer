@@ -140,3 +140,21 @@ def test_un_fichier_illisible_est_ecarte(monkeypatch, tmp_path):
     assert settings["simulation"] is True  # retour aux valeurs par defaut
     assert settings_file.exists()
     assert (tmp_path / "settings.json.bad").exists()
+
+
+def test_un_fichier_avec_bom_est_accepte(monkeypatch, tmp_path):
+    """Notepad enregistre souvent en UTF-8 avec BOM : ce n'est pas une erreur."""
+
+    settings_file = tmp_path / "settings.json"
+    settings_file.write_bytes(
+        b"\xef\xbb\xbf" + b'{"server_port": 11112, "simulation": false}'
+    )
+
+    monkeypatch.setattr(settings_manager, "SETTINGS_FILE", settings_file)
+    monkeypatch.setattr(settings_manager, "_settings", None)
+
+    settings = settings_manager.load_settings()
+
+    assert settings["server_port"] == 11112
+    assert settings["simulation"] is False
+    assert not (tmp_path / "settings.json.bad").exists()

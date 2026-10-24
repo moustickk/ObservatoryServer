@@ -242,7 +242,11 @@ def load_settings():
             return deepcopy(_settings)
 
         try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            # utf-8-sig : un fichier enregistre par Notepad commence souvent
+            # par un BOM, que `utf-8` refuse. Sans cela, la configuration
+            # serait declaree illisible et remplacee par les valeurs par
+            # defaut — l'observatoire passerait en simulation sans prevenir.
+            with open(SETTINGS_FILE, "r", encoding="utf-8-sig") as f:
                 raw = json.load(f)
         except (json.JSONDecodeError, OSError) as ex:
             bad = SETTINGS_FILE.with_suffix(".json.bad")

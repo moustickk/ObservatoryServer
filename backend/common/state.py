@@ -36,7 +36,9 @@ def save_state(data):
 
 def load_state():
     try:
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
+        # Meme raison que pour settings.json : un BOM ne doit pas faire
+        # passer le toit pour inconnu au demarrage.
+        with open(STATE_FILE, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return _default_state()

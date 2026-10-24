@@ -14,6 +14,7 @@
   "close_anyway": false,
   "mount_check_mode": "strict",
   "simulation_mount_parked": true,
+  "ui_local_only": true,
   "max_wind_speed": 60,
   "max_wind_gust": 70,
   "max_rain_probability": 30,
