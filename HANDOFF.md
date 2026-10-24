@@ -46,6 +46,8 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 ## Commits
 
 ```
+7c930bb Phase 4 : threads dedies serie et COM, grace de parkage, agent de sauvegarde
+e23f9c6 Reglages reels mesures sur le toit et securite firmware a 50 s
 8f4d42e Phase 3 : firmware robuste et protocole serie strict
 201d2ad Conformite Alpaca : proprietes manquantes et management sans version
 9a41afe Compatibilite Python 3.15 et document de reprise
