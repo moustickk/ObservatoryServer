@@ -69,6 +69,105 @@ _lock = threading.RLock()
 _settings = None
 
 
+# -- schema de configuration ---------------------------------------------
+#
+# Une description par reglage, et un groupe pour l'interface web. Ce schema
+# est expose par /api/config/schema : l'UI peut ainsi construire ses champs
+# et afficher une aide, sans dupliquer la liste des reglages.
+
+SETTING_INFO = {
+    # general
+    "simulation": ("general", "Mode simulation global : toit et monture virtuels, aucun acces au materiel."),
+    "server_port": ("general", "Port HTTP unique (API REST, Alpaca, management)."),
+    "dome_unique_id": ("general", "Identifiant Alpaca stable du Dome. Le changer cree un appareil en double dans NINA."),
+    "safety_unique_id": ("general", "Identifiant Alpaca stable du SafetyMonitor."),
+    # toit
+    "serial_port": ("toit", "Port serie de l'Arduino (par exemple COM4)."),
+    "baudrate": ("toit", "Debit de la liaison serie ; doit correspondre au firmware."),
+    "full_travel_time": ("toit", "Temps de trajet complet mesure, en secondes (estimation de position)."),
+    "max_travel_time": ("toit", "Doit rester egal a ROOF_MAX_TRAVEL_MS du firmware : c'est lui qui tranche."),
+    # monture
+    "telescope_driver": ("monture", "ProgID ASCOM du driver (EQMOD.Telescope, ou EQMOD_SIM.Telescope pour un essai)."),
+    "park_timeout": ("monture", "Delai maximal d'attente d'un parkage, en secondes."),
+    "park_grace_seconds": ("monture", "Temps laisse a la monture pour se parquer avant que le toit refuse."),
+    "auto_park_mount": ("monture", "L'agent de sauvegarde peut parquer lui-meme la monture. Jamais sur une commande interactive."),
+    "close_anyway": ("monture", "Fermer le toit meme si la monture n'est pas parquee. Dangereux, desactive par defaut."),
+    "mount_check_mode": ("monture", "strict : refus si la monture n'est pas parquee. disabled : aucune verification."),
+    "simulation_mount_parked": ("monture", "Etat de parkage de la monture simulee (mode simulation)."),
+    # meteo
+    "max_wind_speed": ("meteo", "Vent moyen maximal, en km/h."),
+    "max_wind_gust": ("meteo", "Rafale maximale, en km/h."),
+    "max_rain_probability": ("meteo", "Probabilite de pluie maximale sur la fenetre, en pourcentage."),
+    "max_rain_mm": ("meteo", "Cumul de pluie maximal sur la fenetre, en millimetres."),
+    "max_cloud_cover": ("meteo", "Couverture nuageuse maximale, en pourcentage."),
+    "min_temperature": ("meteo", "Temperature minimale avant risque de gel, en degres Celsius."),
+    "lookahead_hours": ("meteo", "Fenetre de prevision prise en compte, en heures ; on retient le pire cas."),
+    "weather_max_age_minutes": ("meteo", "Au-dela, une mesure est perimee et la securite passe UNSAFE."),
+    "weather_cache_minutes": ("meteo", "Duree de validite du cache meteo."),
+    "weather_update_seconds": ("meteo", "Intervalle de rafraichissement meteo, en secondes."),
+    "safety_agent_enabled": ("meteo", "Fermeture automatique du toit quand la meteo est UNSAFE."),
+}
+
+SETTING_CHOICES = {
+    "mount_check_mode": ("strict", "disabled"),
+}
+
+SETTING_GROUPS = ("general", "toit", "monture", "meteo")
+
+
+def _type_name(value):
+
+    if isinstance(value, bool):
+        return "bool"
+
+    if isinstance(value, int):
+        return "int"
+
+    if isinstance(value, float):
+        return "float"
+
+    if isinstance(value, str):
+        return "str"
+
+    return "unknown"
+
+
+def schema():
+    """Description typee des reglages, avec valeurs courantes.
+
+    `requires_restart` vaut True partout : les modules metier lisent la
+    configuration a l'import. Ce sera affiche tel quel par l'interface.
+    """
+
+    current = as_dict()
+
+    items = []
+
+    for key, default in DEFAULT_SETTINGS.items():
+
+        group, description = SETTING_INFO.get(key, ("general", ""))
+
+        item = {
+            "key": key,
+            "group": group,
+            "type": _type_name(default),
+            "default": default,
+            "value": current.get(key, default),
+            "description": description,
+            "requires_restart": True,
+        }
+
+        if key in SETTING_CHOICES:
+            item["choices"] = list(SETTING_CHOICES[key])
+
+        items.append(item)
+
+    return {
+        "groups": list(SETTING_GROUPS),
+        "settings": items,
+    }
+
+
 def _coerce(key, default, value):
     """Convertit et valide une valeur selon le type de la valeur par defaut."""
 

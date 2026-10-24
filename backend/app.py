@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from backend import container
 from backend.common.alpaca.server import router as alpaca_router
-from backend.common.config_api import get_config
+from backend.common.config_api import get_config, get_schema
 from backend.common.config_update_api import (
     InvalidSettingValue,
     UnknownSetting,
@@ -135,6 +135,11 @@ def safety_device_state():
 @app.get("/api/config")
 def config():
     return get_config()
+
+
+@app.get("/api/config/schema")
+def config_schema():
+    return get_schema()
 
 
 @app.post("/api/config/{key}/{value}")

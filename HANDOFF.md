@@ -37,7 +37,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 4 | terminée | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
 | 5 | terminée | météo fail-safe : jamais SAFE sur panne, rafales, pire cas de la fenêtre |
 | 6 | terminée | journalisation : ajout O(1), verrou par fichier, purge horaire |
-| 7 | à faire | schéma de configuration + chemins compatibles installation |
+| 7 | terminée | chemins compatibles installation (`%ProgramData%`) + schéma de configuration |
 | 8 | à faire | interface web locale |
 | 9 | à faire | tray app, PyInstaller, installateur Inno Setup, démarrage auto |
 | 10 | à faire | atelier Arduino via `arduino-cli` |
@@ -88,7 +88,9 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - Interface finale : **UI web locale** servie par FastAPI, pas de Qt.
 - Packaging prévu : **PyInstaller `onedir` + Inno Setup**, en **tray app**
   (jamais un service Windows : l'accès COM/ASCOM exige la session utilisateur).
-- Données d'installation : `%ProgramData%\ObservatoryServer\`.
+- Données d'installation : `%ProgramData%\ObservatoryServer\`. En
+  développement, `<projet>/data`. `OBSERVATORY_DATA_DIR` force un autre
+  emplacement (tests, installation portable, plusieurs instances).
 
 ## Sécurité — à ne pas casser
 
@@ -123,6 +125,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 ```
 
 - http://localhost:11111/api/health
+- http://localhost:11111/api/config/schema (types, groupes, descriptions)
 - http://localhost:11111/api/mount/park (POST, parkage non bloquant)
 - http://localhost:11111/docs
 - http://localhost:11111/management/v1/configureddevices
@@ -177,8 +180,9 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **74 tests** (protocole série, machine à états simulée, threads
-  dédiés, agent de sauvegarde, météo fail-safe, journalisation). Lancer avec
+- `pytest` : **84 tests** (protocole série, machine à états simulée, threads
+  dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
+  schéma de configuration). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Phase 4 vérifiée en conditions réelles de serveur :
   - 20 lectures `shutterstatus` consécutives : médiane **3,4 ms**, max 6,1 ms
@@ -229,8 +233,8 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 7** : schéma de configuration + chemins compatibles installation
-   (`%ProgramData%\ObservatoryServer\`).
+1. **Phase 8** : interface web locale (servie par FastAPI, à partir de
+   `/api/config/schema`).
 2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
    `simulation_mount` séparés et un moyen de neutraliser l'agent de
    sauvegarde pendant l'essai.

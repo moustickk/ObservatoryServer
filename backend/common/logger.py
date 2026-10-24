@@ -25,21 +25,9 @@ import os
 import threading
 import time
 from datetime import datetime
-from pathlib import Path
 
+from backend.common.paths import LOG_DIR
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-
-LOG_DIR = (
-    BASE_DIR
-    / "data"
-    / "logs"
-)
-
-LOG_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
 
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
