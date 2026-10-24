@@ -135,7 +135,7 @@ class DomeService:
                 return refusal
 
             try:
-                state = self.roof.send("OPEN")
+                state = self.roof.command("OPEN")
             except CommandRejected as ex:
                 return self._rejected("open", ex)
             except LinkError as ex:
@@ -155,7 +155,7 @@ class DomeService:
                 return refusal
 
             try:
-                state = self.roof.send("CLOSE")
+                state = self.roof.command("CLOSE")
             except CommandRejected as ex:
                 return self._rejected("close", ex)
             except LinkError as ex:
@@ -171,7 +171,7 @@ class DomeService:
     def stop(self):
         with self._lock:
             try:
-                state = self.roof.send("STOP")
+                state = self.roof.command("STOP")
             except CommandRejected as ex:
                 return self._rejected("stop", ex)
             except LinkError as ex:
@@ -187,43 +187,72 @@ class DomeService:
     # -- surveillance ----------------------------------------------------
 
     def sync(self):
-        """Interroge le controleur et met l'etat a jour. Retourne l'etat."""
+        """Recopie l'etat publie par le thread serie. Aucun acces au port.
 
-        with self._lock:
-            try:
-                state = self.roof.send("STATUS")
-            except LinkError as ex:
-                if self.roof.connected:
-                    log.warning("STATUS impossible : %s", ex)
-                previous = self.state.get("state")
-                self.state.set_state("UNKNOWN")
-                if previous != "UNKNOWN":
-                    self.state.save()
+        Le thread dedie interroge le controleur en continu ; ici on ne fait
+        que lire son cache. Un cache perime signifie que le controleur ne
+        repond plus : on le traduit en UNKNOWN plutot que de presenter un
+        etat qui n'est peut-etre plus vrai.
+        """
+
+        snapshot = self.roof.snapshot()
+        previous = self.state.get("state")
+
+        if snapshot["stale"]:
+            # Aucune donnee encore recue (premier sondage en cours) : ce
+            # n'est pas une panne, on ne journalise rien et on ne sauvegarde
+            # pas un UNKNOWN qui n'a pas de sens.
+            if snapshot["age"] is None:
                 return "UNKNOWN"
 
-            previous = self.state.get("state")
-            if state != previous:
-                self.state.set_state(state)
+            if previous != "UNKNOWN":
+                self.state.set_state("UNKNOWN")
                 self.state.save()
-                log.info("Etat du toit : %s -> %s", previous, state)
+                log.warning(
+                    "Etat du toit perime (%s) : %s -> UNKNOWN",
+                    snapshot["last_error"] or "sans reponse",
+                    previous,
+                )
+            return "UNKNOWN"
 
-            return state
+        state = snapshot["state"]
+
+        if state and state != previous:
+            self.state.set_state(state)
+            self.state.save()
+            log.info("Etat du toit : %s -> %s", previous, state)
+
+        return state or "UNKNOWN"
 
     # -- etat ------------------------------------------------------------
 
     def status(self):
         snapshot = self.state.snapshot()
+        link = self.roof.snapshot()
+
+        if hasattr(self.mount, "snapshot"):
+            mount = self.mount.snapshot()
+        else:  # pragma: no cover - liaison sans cache
+            mount = {
+                "at_park": self.mount.at_park(),
+                "available": self.mount.available,
+                "description": self.mount.description,
+            }
+
         return {
             "state": snapshot["state"],
             "position": snapshot["position"],
             "alarm": snapshot["alarm"],
             "link": {
-                "connected": self.roof.connected,
-                "description": self.roof.description,
+                "connected": link["connected"],
+                "description": link["description"],
+                "stale": link["stale"],
+                "last_error": link["last_error"],
             },
             "mount": {
-                "available": self.mount.available,
-                "at_park": self.mount.at_park(),
-                "description": self.mount.description,
+                "available": mount["available"],
+                "at_park": mount["at_park"],
+                "description": mount["description"],
+                "stale": mount.get("stale", False),
             },
         }

@@ -2,6 +2,13 @@
 
 Aucun module ne doit ouvrir de port serie ou COM a l'import : c'est le
 conteneur (donc le lifespan FastAPI) qui instancie le materiel.
+
+Deux threads sont proprietaires du materiel :
+
+ - `RoofController` : seul a parler au port serie du toit ;
+ - `MountMonitor`   : seul a appeler le driver ASCOM de la monture.
+
+Tout le reste (API REST, Alpaca, agent de sauvegarde) ne lit que leurs caches.
 """
 
 import logging
@@ -9,10 +16,13 @@ import threading
 
 from backend.common import settings_manager
 from backend.common.alpaca.discovery import DiscoveryResponder
+from backend.dome.controller import RoofController
 from backend.dome.monitor import start_monitor
 from backend.dome.serial_link import build_roof_link
 from backend.dome.service import DomeService
 from backend.mount.link import build_mount_link
+from backend.mount.monitor import MountMonitor
+from backend.safety.agent import BackupAgent
 from backend.safety.monitor import weather_monitor
 from backend.safety.service import SafetyService
 
@@ -31,10 +41,20 @@ class Services:
         self.stop_event = threading.Event()
 
         self.roof_link = build_roof_link(self.settings)
-        self.mount_link = build_mount_link(self.settings)
+        self.roof = RoofController(self.roof_link)
 
-        self.dome = DomeService(self.roof_link, self.mount_link, self.settings)
+        self.mount_link = build_mount_link(self.settings)
+        self.mount = MountMonitor(self.mount_link)
+
+        self.dome = DomeService(self.roof, self.mount, self.settings)
         self.safety = SafetyService()
+
+        self.agent = BackupAgent(
+            self.dome,
+            self.safety,
+            self.settings,
+            self.stop_event,
+        )
 
         self.discovery = DiscoveryResponder(
             alpaca_port=self.settings.get("server_port", 11111)
@@ -43,9 +63,15 @@ class Services:
         self.threads = []
 
     def start(self):
+        # Le materiel d'abord : les caches doivent se remplir avant que
+        # l'API ne reponde.
+        self.roof.start()
+        self.mount.start()
+
         self.discovery.start()
 
         self.threads.append(start_monitor(self.dome, self.stop_event))
+        self.threads.append(self.agent.start())
 
         weather = threading.Thread(
             target=weather_monitor,
@@ -66,7 +92,11 @@ class Services:
     def stop(self):
         self.stop_event.set()
         self.discovery.stop()
-        self.roof_link.close()
+
+        # Arreter les producteurs de donnees avant de fermer la liaison.
+        self.mount.stop()
+        self.roof.close()
+
         log.info("Services arretes")
 
 

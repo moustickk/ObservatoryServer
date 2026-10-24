@@ -34,7 +34,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 2 | terminée | couche Alpaca : management, Dome, SafetyMonitor, découverte UDP |
 | 2b | terminée | conformité Alpaca validée sous NINA 3.3 (0 erreur 404 au polling) |
 | 3 | terminée | firmware robuste : `OK:`/`EVT:`, anti-rebond, rampes, parseur non bloquant |
-| 4 | à faire | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
+| 4 | terminée | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
 | 5 | à faire | météo fail-safe (données périmées ⇒ UNSAFE) |
 | 6 | à faire | journalisation (fin du O(n²) de `write_log`) |
 | 7 | à faire | schéma de configuration + chemins compatibles installation |
@@ -128,14 +128,17 @@ backend/
     health.py            vue de santé agrégée
   dome/
     serial_link.py       RoofLink : Serial / Simulated / Unavailable
+    controller.py        thread unique propriétaire du port série + cache
     service.py           commandes + interlock + alarme
     state.py             état du toit, position estimée
-    monitor.py           boucle STATUS
+    monitor.py           recopie du cache dans l'état persistant
     manual_control.py    outil manuel (confirmation en réel)
   mount/
     link.py              MountLink : Ascom (EQMOD) / Simulated
+    monitor.py           thread COM dédié + cache de AtPark
   safety/
     monitor.py           boucle météo
+    agent.py             agent de sauvegarde (ferme sur UNSAFE)
     evaluator.py         seuils
     service.py           façade SafetyService
 firmware/
@@ -160,8 +163,15 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : 34 tests du protocole série et de la machine à états simulée.
-  Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.
+- `pytest` : **49 tests** (protocole série, machine à états simulée, threads
+  dédiés, agent de sauvegarde). Lancer avec
+  `.\\.venv\\Scripts\\python.exe -m pytest`.
+- Phase 4 vérifiée en conditions réelles de serveur :
+  - 20 lectures `shutterstatus` consécutives : médiane **3,4 ms**, max 6,1 ms
+    (aucun accès série dans la requête) ;
+  - `abortslew` : 200 en **20 ms** ;
+  - météo UNSAFE réelle (pluie 100 %) : l'agent a fermé le toit de lui-même
+    13 s après un `STOP` manuel (`Agent de sauvegarde : closed`).
 - Firmware réellement **compilé** avec `arduino-cli` (noyau `arduino:avr`
   1.8.8, cible Uno) : 4 484 octets de flash, 345 octets de RAM, aucune erreur.
 - **Firmware réellement téléversé et exécuté** sur l'Arduino Nano (COM4),
@@ -182,22 +192,23 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 - `datetime.now()` au lieu d'un fuseau explicite (Europe/Paris).
 - Prévision : `next_index` au lieu d'un max sur la fenêtre, et
   `wind_gusts_10m` non exploité. Phase 5.
-- Appels COM encore dans le thread de la requête. Phase 4.
-- Grâce de parkage de 180 s non implémentée : refus immédiat aujourd'hui.
 - Le firmware n'a pas d'encodeur : un toit déplacé à la main hors tension
   n'est pas détecté (la position serveur reste l'ancienne).
 - Une butée collée n'est détectée qu'en tentant de quitter la position
   (`NO_MOTION`), pas au repos.
 - `analogWrite` sur D5/D6 est à ~980 Hz : léger sifflement du moteur.
-- Le dossier `firmware/` ne porte pas le nom du croquis : copier les deux
-  fichiers dans un dossier `RoofController/` avant `arduino-cli compile`.
+- Un état `STOPPED` n'est pas durable : il est levé par une butée ou une
+  commande. Ne pas s'appuyer dessus pour une décision de sécurité.
+- L'agent de sauvegarde ferme aussi un toit que l'opérateur vient d'arrêter
+  si la météo est UNSAFE. C'est le comportement voulu, mais il faut le savoir
+  avant un essai manuel : pour travailler toit ouvert, il faut une météo sûre
+  ou arrêter le serveur.
 
 ## Prochaines étapes immédiates
 
-1. **Phase 4** : thread COM dédié (les 17 interrogations NINA par cycle ne
-   doivent pas traverser une requête HTTP), grâce de parkage 180 s, agent de
-   sauvegarde météo.
-2. Puis 5 (météo fail-safe) et 6 (journaux) avant toute mise en service.
+1. **Phase 5** : météo fail-safe (données périmées ou API en panne ⇒ UNSAFE),
+   `wind_gusts_10m`, max sur la fenêtre de prévision, fuseau explicite.
+2. **Phase 6** : journaux (`write_log` en O(n²)).
 3. Essai au banc du firmware sur l'Arduino, avec la procédure de
    `firmware/README.md` (les deux sens ont déjà été validés).
 

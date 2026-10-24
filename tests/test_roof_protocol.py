@@ -231,14 +231,13 @@ class StubMount:
 
 class RefusingRoof:
     description = "controleur de test"
-    connected = True
 
     def __init__(self, error):
         self.error = error
         self.commands = []
 
-    def send(self, command, timeout=2.0):
-        self.commands.append(command)
+    def command(self, name, timeout=5.0):
+        self.commands.append(name)
         raise self.error
 
 
