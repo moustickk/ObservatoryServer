@@ -123,6 +123,11 @@ async def supported_actions(request: Request):
     return await handle(request, lambda params: [])
 
 
+@router.get(PREFIX + "/devicestate")
+async def device_state(request: Request):
+    return await handle(request, lambda params: [])
+
+
 @router.get(PREFIX + "/issafe")
 async def is_safe(request: Request):
     return await handle(request, _is_safe)

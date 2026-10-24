@@ -26,11 +26,16 @@ def _services():
     return container.get_services()
 
 
+# Certains clients (dont NINA) sondent aussi les routes de management sans le
+# prefixe de version. Le chemin est identique, on enregistre donc la meme
+# fonction sous les deux formes.
+@router.get("/management/apiversions")
 @router.get("/management/v1/apiversions")
 async def api_versions(request: Request):
     return await handle(request, lambda params: [API_VERSION])
 
 
+@router.get("/management/description")
 @router.get("/management/v1/description")
 async def description(request: Request):
     return await handle(
@@ -44,6 +49,7 @@ async def description(request: Request):
     )
 
 
+@router.get("/management/configureddevices")
 @router.get("/management/v1/configureddevices")
 async def configured_devices(request: Request):
     services = _services()

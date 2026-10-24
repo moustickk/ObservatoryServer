@@ -178,6 +178,13 @@ async def supported_actions(request: Request):
     return await handle(request, lambda params: [])
 
 
+@router.get(PREFIX + "/devicestate")
+async def device_state(request: Request):
+    # Propriete commune a tous les devices Alpaca : liste de paires
+    # nom/valeur. Une liste vide est conforme ; NINA l'interroge au polling.
+    return await handle(request, lambda params: [])
+
+
 @router.get(PREFIX + "/shutterstatus")
 async def shutter_status(request: Request):
     def read(params):
@@ -235,6 +242,30 @@ async def altitude(request: Request):
 @router.get(PREFIX + "/cansetshutter")
 async def can_set_shutter(request: Request):
     return await handle(request, lambda params: True)
+
+
+@router.get(PREFIX + "/canpark")
+async def can_park(request: Request):
+    # « Parker » un toit roulant = le fermer : toujours possible.
+    return await handle(request, lambda params: True)
+
+
+@router.get(PREFIX + "/canfindhome")
+async def can_find_home(request: Request):
+    # Pas de recherche de position d'origine : les fins de course suffisent.
+    return await handle(request, lambda params: False)
+
+
+@router.get(PREFIX + "/cansetpark")
+async def can_set_park(request: Request):
+    # La position de parkage est fixe (toit ferme), non redefinissable.
+    return await handle(request, lambda params: False)
+
+
+@router.get(PREFIX + "/cansetazimuth")
+async def can_set_azimuth(request: Request):
+    # Toit roulant : pas de rotation.
+    return await handle(request, lambda params: False)
 
 
 @router.get(PREFIX + "/canslave")
