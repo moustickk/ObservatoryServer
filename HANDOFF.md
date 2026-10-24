@@ -46,6 +46,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 ## Commits
 
 ```
+8f4d42e Phase 3 : firmware robuste et protocole serie strict
 201d2ad Conformite Alpaca : proprietes manquantes et management sans version
 9a41afe Compatibilite Python 3.15 et document de reprise
 ddfc9d5 Phase 2 : couche ASCOM Alpaca (Dome + SafetyMonitor + decouverte)
