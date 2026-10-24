@@ -22,5 +22,6 @@
   "lookahead_hours": 1,
   "weather_max_age_minutes": 30,
   "weather_cache_minutes": 30,
-  "weather_update_seconds": 600
+  "weather_update_seconds": 600,
+  "safety_agent_enabled": true
 }

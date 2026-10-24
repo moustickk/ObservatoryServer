@@ -71,7 +71,10 @@ class Services:
         self.discovery.start()
 
         self.threads.append(start_monitor(self.dome, self.stop_event))
-        self.threads.append(self.agent.start())
+
+        agent_thread = self.agent.start()
+        if agent_thread is not None:
+            self.threads.append(agent_thread)
 
         weather = threading.Thread(
             target=weather_monitor,

@@ -56,6 +56,9 @@ DEFAULT_SETTINGS = {
     "weather_max_age_minutes": 30,
     "weather_cache_minutes": 30,
     "weather_update_seconds": 600,
+    # L'agent qui ferme le toit sur UNSAFE. A ne desactiver que pour un essai
+    # supervise : sans lui, plus aucune fermeture automatique.
+    "safety_agent_enabled": True,
 }
 
 _lock = threading.RLock()

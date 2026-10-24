@@ -277,11 +277,11 @@ class StubDome:
         return {"ok": True, "state": "STOPPED"}
 
 
-def make_agent(dome, safety, grace=0.1):
+def make_agent(dome, safety, grace=0.1, enabled=True):
     return BackupAgent(
         dome,
         safety,
-        {"park_grace_seconds": grace},
+        {"park_grace_seconds": grace, "safety_agent_enabled": enabled},
         grace_poll_seconds=0.01,
     )
 
@@ -356,3 +356,14 @@ def test_agent_ne_reattente_pas_immediatement():
 
     assert agent.tick() == "not_parked"
     assert agent.tick() == "backoff"
+
+
+def test_agent_desactive_ne_ferme_rien():
+    """Essai supervise : l'agent doit rester muet, meme sous la pluie."""
+
+    dome = StubDome(state="OPENED", parked=True)
+    agent = make_agent(dome, StubSafety(safe=False), enabled=False)
+
+    assert agent.tick() == "disabled"
+    assert agent.start() is None
+    assert dome.closed == 0

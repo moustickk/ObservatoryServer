@@ -46,6 +46,7 @@ class BackupAgent:
         self.safety = safety
         self.grace_seconds = float(settings.get("park_grace_seconds", 180))
         self.grace_poll_seconds = float(grace_poll_seconds)
+        self.enabled = bool(settings.get("safety_agent_enabled", True))
         self.stop_event = stop_event or threading.Event()
 
         self._handled = False
@@ -54,6 +55,13 @@ class BackupAgent:
     # -- cycle de vie ----------------------------------------------------
 
     def start(self):
+        if not self.enabled:
+            log.warning(
+                "Agent de sauvegarde DESACTIVE par configuration "
+                "(safety_agent_enabled = false) : aucune fermeture automatique"
+            )
+            return None
+
         thread = threading.Thread(
             target=self._loop,
             name="safety-agent",
@@ -86,6 +94,9 @@ class BackupAgent:
 
     def tick(self, now=None):
         """Un tour de decision. Retourne une chaine courte (utile aux tests)."""
+
+        if not self.enabled:
+            return "disabled"
 
         status = self.safety.status()
         safe = status.get("safe")
