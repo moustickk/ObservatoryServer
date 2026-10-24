@@ -83,8 +83,8 @@ SETTING_INFO = {
     # general
     "simulation": ("general", "Mode simulation global : toit et monture virtuels, aucun acces au materiel."),
     "server_port": ("general", "Port HTTP unique (API REST, Alpaca, management)."),
-    "dome_unique_id": ("general", "Identifiant Alpaca stable du Dome. Le changer cree un appareil en double dans NINA."),
-    "safety_unique_id": ("general", "Identifiant Alpaca stable du SafetyMonitor."),
+    "dome_unique_id": ("general", "Identifiant Alpaca stable du Dome. Non modifiable : le changer cree un appareil en double dans NINA."),
+    "safety_unique_id": ("general", "Identifiant Alpaca stable du SafetyMonitor. Non modifiable."),
     "ui_local_only": ("general", "L'interface web et les commandes ne repondent qu'aux clients de la machine locale."),
     # toit
     "serial_port": ("toit", "Port serie de l'Arduino (par exemple COM4)."),
@@ -116,6 +116,12 @@ SETTING_INFO = {
 SETTING_CHOICES = {
     "mount_check_mode": ("strict", "disabled"),
 }
+
+# Identifiants Alpaca : stables par nature. Les modifier cree un appareil en
+# double dans NINA, qui perd alors son association avec le toit existant.
+# L'API les refuse ; une remise a zero reste possible en editant le fichier
+# de configuration a la main.
+READ_ONLY_SETTINGS = ("dome_unique_id", "safety_unique_id")
 
 SETTING_GROUPS = ("general", "toit", "monture", "meteo")
 
@@ -160,6 +166,7 @@ def schema():
             "value": current.get(key, default),
             "description": description,
             "requires_restart": True,
+            "read_only": key in READ_ONLY_SETTINGS,
         }
 
         if key in SETTING_CHOICES:
@@ -314,6 +321,12 @@ def update_setting(key, value):
 
     if key not in DEFAULT_SETTINGS:
         raise KeyError(key)
+
+    if key in READ_ONLY_SETTINGS:
+        raise ValueError(
+            f"{key} : identifiant stable, non modifiable "
+            "(le changer cree un appareil en double dans NINA)"
+        )
 
     validated = _coerce(key, DEFAULT_SETTINGS[key], value)
 

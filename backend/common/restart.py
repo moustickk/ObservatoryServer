@@ -91,11 +91,13 @@ time.sleep(0.5)
 # Le nouveau serveur n'a pas de console : on conserve sa sortie dans un
 # fichier, sinon tout diagnostic serait perdu apres un redemarrage.
 with open(log_path, "a", encoding="utf-8", buffering=1) as output:
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(
         [sys.executable, "-m", "backend.run_api"],
         cwd=root,
         stdout=output,
         stderr=subprocess.STDOUT,
+        creationflags=flags,
     )
 """
 

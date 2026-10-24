@@ -89,6 +89,27 @@ def test_les_valeurs_autorisees_sont_exposees():
     assert "choices" not in items["simulation"]
 
 
+def test_les_identifiants_alpaca_sont_en_lecture_seule():
+    items = {
+        item["key"]: item
+        for item in settings_manager.schema()["settings"]
+    }
+
+    assert items["dome_unique_id"]["read_only"] is True
+    assert items["safety_unique_id"]["read_only"] is True
+    assert items["serial_port"]["read_only"] is False
+
+
+def test_lapi_refuse_de_changer_un_identifiant_stable():
+    with pytest.raises(ValueError) as caught:
+        settings_manager.update_setting(
+            "dome_unique_id",
+            "00000000-0000-0000-0000-000000000000",
+        )
+
+    assert "NINA" in str(caught.value)
+
+
 # -- premier demarrage ---------------------------------------------------
 
 

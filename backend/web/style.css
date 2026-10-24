@@ -186,6 +186,14 @@ legend {
 }
 .inline { display: flex; gap: 6px; align-items: center; }
 .inline input { flex: 1; min-width: 0; }
+.field input.readonly {
+  color: var(--muted);
+  background: var(--panel-2);
+  border-style: dashed;
+  cursor: default;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
 button.scan {
   padding: 6px 10px;
   font-size: 12px;

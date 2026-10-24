@@ -74,6 +74,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **Le firmware est l'autorité sur la sécurité du toit.** Les fins de course,
   le temps de trajet maximal et la détection de non-mouvement sont traités
   par l'Arduino ; le serveur ne fait que demander et lire.
+- **Identifiants Alpaca en lecture seule.** `dome_unique_id` et
+  `safety_unique_id` sont affichés dans l'interface mais refusés par l'API
+  (400) : les changer crée un appareil en double dans NINA, qui perd son
+  association. Une remise à zéro reste possible en éditant `settings.json`.
 - **Le lien série se rétablit seul.** Une ouverture de COM4 impossible au
   démarrage (port encore tenu par l'instance précédente, Arduino débranché)
   n'est plus définitive : `SerialRoofLink` retente au cycle suivant. C'est ce
@@ -202,7 +206,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **94 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **96 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, interface web). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.

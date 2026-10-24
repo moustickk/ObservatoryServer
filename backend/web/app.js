@@ -290,6 +290,14 @@ function fieldElement(item) {
   input.dataset.initial =
     item.type === "bool" ? String(item.value === true) : String(item.value);
 
+  // Identifiants Alpaca : visibles et copiables, mais pas modifiables.
+  // Les changer ferait apparaitre un second appareil dans NINA.
+  if (item.read_only) {
+    input.readOnly = true;
+    input.classList.add("readonly");
+    input.title = "Identifiant stable : non modifiable depuis l'interface";
+  }
+
   const description = document.createElement("span");
   description.className = "desc";
   description.textContent = item.description || "";
