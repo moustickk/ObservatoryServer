@@ -94,7 +94,7 @@ Codes de refus : `BUSY`, `FAULT`, `UNKNOWN_CMD`, `LINE_TOO_LONG`.
 
 | Protection | Valeur par défaut | Comportement |
 |---|---|---|
-| Temps de trajet maximal | 60 s (`ROOF_MAX_TRAVEL_MS`) | coupe et passe en `ERROR` (`TIMEOUT`) |
+| Temps de trajet maximal | 50 s (`ROOF_MAX_TRAVEL_MS`) | coupe et passe en `ERROR` (`TIMEOUT`) |
 | Non-mouvement | 4 s (`ROOF_NO_MOTION_MS`) | la butée de départ n'est pas relâchée ⇒ moteur bloqué, `ERROR` (`NO_MOTION`) |
 | Anti-rebond | 30 ms (`ROOF_DEBOUNCE_MS`) | évite les arrêts parasites dus aux vibrations |
 | Temps mort de sens | 400 ms (`ROOF_DIRECTION_DEAD_MS`) | moteur coupé avant tout nouveau départ |
@@ -154,7 +154,13 @@ Taille mesurée avec le noyau `arduino:avr` 1.8.8 : **4 484 octets de flash
    Le toit s'arrête, `EVT:NO_MOTION:ERROR` ou `EVT:LIMITS:ERROR`.
    `OPEN` → `ER:FAULT:ERROR`. `STOP` acquitte, puis `OPEN` repart.
 9. Mesurer le temps de trajet réel et vérifier qu'il est **inférieur** à
-   `ROOF_MAX_TRAVEL_MS` et égal à `full_travel_time` de la configuration.
+   `ROOF_MAX_TRAVEL_MS` et proche de `full_travel_time` de la configuration.
+
+Mesures relevées le 24/10/2026 sur l'installation : **47,64 s** en ouverture,
+**47,11 s** en fermeture. Config retenue : `full_travel_time = 48`,
+`ROOF_MAX_TRAVEL_MS = 50000`. La marge n'est que de 2,4 s : c'est un choix
+assumé (un toit qui force est un toit qui coince), mais il faut surveiller
+les premiers fonctionnements par temps froid.
 
 ## Réglages à ajuster sur l'installation réelle
 
@@ -162,7 +168,7 @@ Taille mesurée avec le noyau `arduino:avr` 1.8.8 : **4 484 octets de flash
 |---|---|
 | Le toit ne démarre pas | augmenter `ROOF_PWM_MIN` |
 | Démarrage trop brutal | augmenter `ROOF_RAMP_START_MS` |
-| Le toit n'atteint pas la butée en 60 s | augmenter `ROOF_MAX_TRAVEL_MS` **et** `max_travel_time` côté serveur |
+| Le toit n'atteint pas la butée en 50 s | augmenter `ROOF_MAX_TRAVEL_MS` **et** `max_travel_time` côté serveur |
 | Arrêts parasites en cours de route | augmenter `ROOF_DEBOUNCE_MS` |
 | Le moteur « cogne » au changement de sens | augmenter `ROOF_DIRECTION_DEAD_MS` |
 

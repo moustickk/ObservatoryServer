@@ -3,7 +3,7 @@
  *
  * Ce fichier est fait pour etre REGENERE par l'interface web (phase 10) :
  * chaque valeur est protegee par #ifndef, donc une valeur passee en option
- * de compilation (-DROOF_MAX_TRAVEL_MS=55000) prend le dessus sans modifier
+ * de compilation (-DROOF_MAX_TRAVEL_MS=45000) prend le dessus sans modifier
  * le fichier.
  *
  * Les unites sont explicites dans les noms : _MS pour les millisecondes,
@@ -55,11 +55,19 @@
 /* -- Temporisations ------------------------------------------------------ */
 
 /* Arret de securite : au-dela, le firmware coupe le moteur et passe en
- * defaut. Doit rester SUPERIEUR au temps de trajet reel (45 s) et A EGAL
- * de la valeur `max_travel_time` du serveur, pour que ce soit toujours le
- * firmware qui tranche. */
+ * defaut. Doit rester SUPERIEUR au temps de trajet reel et A EGAL de la
+ * valeur `max_travel_time` du serveur, pour que ce soit toujours le
+ * firmware qui tranche.
+ *
+ * Trajet mesure sur l'installation le 24/10/2026 :
+ *   ouverture 47,64 s - fermeture 47,11 s (mesure depuis la commande,
+ *   donc rampe et temps mort inclus).
+ * Valeur retenue : 50 s, soit environ 2,4 s de marge. C'est volontairement
+ * serre : un toit qui force au-dela est un toit qui coince. Si le froid ou
+ * la graisse allongent le trajet, remonter cette valeur EN MEME TEMPS que
+ * `max_travel_time` cote serveur, sinon le serveur croira a une panne. */
 #ifndef ROOF_MAX_TRAVEL_MS
-#define ROOF_MAX_TRAVEL_MS    60000UL
+#define ROOF_MAX_TRAVEL_MS    50000UL
 #endif
 
 /* Si la butee de depart n'est pas relachee apres ce delai, le toit ne bouge

@@ -31,10 +31,13 @@ DEFAULT_SETTINGS = {
     # --- Toit / Arduino ---
     "serial_port": "COM4",
     "baudrate": 115200,
-    "full_travel_time": 45,
-    # Doit rester egal a ROOF_MAX_TRAVEL_MS du firmware (60 s) : le
+    # Temps de trajet mesure sur l'installation : 47,6 s en ouverture,
+    # 47,1 s en fermeture. On arrondit au-dessus (48) pour que l'estimation
+    # de position n'atteigne pas 100 % avant la butee reelle.
+    "full_travel_time": 48,
+    # Doit rester egal a ROOF_MAX_TRAVEL_MS du firmware (50 s) : le
     # controleur est l'autorite, le serveur ne doit pas le devancer.
-    "max_travel_time": 60,
+    "max_travel_time": 50,
     # --- Monture ASCOM ---
     "telescope_driver": "EQMOD_SIM.Telescope",
     "park_timeout": 300,

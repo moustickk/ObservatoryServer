@@ -98,7 +98,8 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 
 - `simulation: true`, `server_port: 11111`
 - `serial_port: COM4`, `baudrate: 115200`
-- `full_travel_time: 45`, `max_travel_time: 60` (= `ROOF_MAX_TRAVEL_MS`)
+- `full_travel_time: 48`, `max_travel_time: 50` (= `ROOF_MAX_TRAVEL_MS`)
+- trajet mesuré : 47,64 s ouverture, 47,11 s fermeture (marge 2,4 s)
 - `telescope_driver: EQMOD_SIM.Telescope` ← **à passer à `EQMOD.Telescope` en réel**
 - `mount_check_mode: strict`, `close_anyway: false`
 - seuils météo : vent 60, rafales 70, pluie 30 % / 0,1 mm, nuages 80 %, T° 0,5 °C
@@ -163,8 +164,13 @@ tests/
   Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Firmware réellement **compilé** avec `arduino-cli` (noyau `arduino:avr`
   1.8.8, cible Uno) : 4 484 octets de flash, 345 octets de RAM, aucune erreur.
-  Le comportement à l'exécution ne peut être validé que sur l'Arduino :
-  procédure d'essai au banc dans `firmware/README.md`.
+- **Firmware réellement téléversé et exécuté** sur l'Arduino Nano (COM4),
+  cible `arduino:avr:nano` :
+  - `EVT:BOOT:CLOSED` au démarrage, puis `OK:CLOSED` sur `STATUS` ;
+  - ouverture réelle mesurée **47,64 s**, `EVT:OPENED` ;
+  - fermeture réelle mesurée **47,11 s**, `EVT:CLOSED` ;
+  - aucun `NO_MOTION`, aucun `TIMEOUT`, aucune alarme.
+  Les deux fins de course NF sont donc câblées et détectées.
 
 Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 `smoke_phase2_interlock.py`, `smoke_conformite.py`, `smoke_phase3.py`.
@@ -193,12 +199,12 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
    sauvegarde météo.
 2. Puis 5 (météo fail-safe) et 6 (journaux) avant toute mise en service.
 3. Essai au banc du firmware sur l'Arduino, avec la procédure de
-   `firmware/README.md`.
+   `firmware/README.md` (les deux sens ont déjà été validés).
 
 ## Mise en service réelle — checklist
 
-- [ ] flasher le firmware et dérouler l'essai au banc (`firmware/README.md`)
-- [ ] mesurer le temps de trajet réel, ajuster `full_travel_time`
+- [x] flasher le firmware et dérouler l'essai au banc (`firmware/README.md`)
+- [x] mesurer le temps de trajet réel, ajuster `full_travel_time` (48 s)
 - [ ] `simulation: false`
 - [ ] `serial_port` = vrai port Arduino
 - [ ] `telescope_driver` = `EQMOD.Telescope`

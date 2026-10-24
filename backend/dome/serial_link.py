@@ -273,7 +273,7 @@ class SimulatedRoofLink(RoofLink):
 
     description = "simulation"
 
-    def __init__(self, travel_time=45.0, max_travel_time=60.0, initial_state="CLOSED"):
+    def __init__(self, travel_time=48.0, max_travel_time=50.0, initial_state="CLOSED"):
         self.travel_time = float(travel_time)
         self.max_travel_time = float(max_travel_time)
         self._lock = threading.RLock()
@@ -375,8 +375,8 @@ def build_roof_link(settings):
     if settings.get("simulation"):
         log.info("Toit en SIMULATION (aucun mouvement physique)")
         return SimulatedRoofLink(
-            travel_time=settings.get("full_travel_time", 45),
-            max_travel_time=settings.get("max_travel_time", 60),
+            travel_time=settings.get("full_travel_time", 48),
+            max_travel_time=settings.get("max_travel_time", 50),
         )
 
     port = settings.get("serial_port", "COM4")
