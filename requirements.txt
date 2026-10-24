@@ -1,5 +1,8 @@
 fastapi>=0.115,<1.0
-uvicorn[standard]>=0.30,<1.0
+# uvicorn sans [standard] : les extras (PyYAML, httptools, watchfiles,
+# websockets) ne servent pas ici et n'ont pas toujours de wheel sur les
+# Python recents, ce qui force une compilation C++.
+uvicorn>=0.30,<1.0
 requests>=2.32,<3.0
 pyserial>=3.5,<4.0
 pywin32>=306; sys_platform == "win32"
