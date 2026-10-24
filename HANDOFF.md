@@ -32,6 +32,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 0 | terminée | sauvegarde, dépôt git |
 | 1 | terminée | démarrage sans matériel, config validée, interlock monture |
 | 2 | terminée | couche Alpaca : management, Dome, SafetyMonitor, découverte UDP |
+| 2b | terminée | conformité Alpaca validée sous NINA 3.3 (0 erreur 404 au polling) |
 | 3 | à faire | firmware robuste (`OK:`/`EVT:`, anti-rebond, rampe, parseur non bloquant, `MAX_TRAVEL_TIME` 55 s) |
 | 4 | à faire | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
 | 5 | à faire | météo fail-safe (données périmées ⇒ UNSAFE) |
@@ -45,6 +46,8 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 ## Commits
 
 ```
+201d2ad Conformite Alpaca : proprietes manquantes et management sans version
+9a41afe Compatibilite Python 3.15 et document de reprise
 ddfc9d5 Phase 2 : couche ASCOM Alpaca (Dome + SafetyMonitor + decouverte)
 3644058 Phase 1 : demarrage sans materiel, config validee, interlock monture
 c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
