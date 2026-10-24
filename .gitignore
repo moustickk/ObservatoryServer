@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Observatoire - donnees d'execution (etat et journaux, pas du code)
+data/logs/
+data/state/
+*.zip
+
+# Outils locaux
+.venv/
+.pytest_cache/
+__pycache__/

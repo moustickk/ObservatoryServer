@@ -1,14 +1,28 @@
-_health = {}
+"""Vue de sante agregee du serveur."""
+
+from backend.common.constants import APP_NAME, VERSION
 
 
-def set_status(
-    service,
-    status
-):
+def health_snapshot(services):
 
-    _health[service] = status
+    dome = services.dome.status()
+    safety = services.safety.status()
 
-
-def get_status():
-
-    return _health
+    return {
+        "application": APP_NAME,
+        "version": VERSION,
+        "simulation": services.simulation,
+        "dome": {
+            "state": dome["state"],
+            "position": dome["position"],
+            "alarm": dome["alarm"],
+            "link": dome["link"],
+            "mount": dome["mount"],
+        },
+        "safety": {
+            "safe": safety.get("safe"),
+            "status": safety.get("status"),
+            "data_age_minutes": safety.get("data_age_minutes"),
+            "last_weather_update": safety.get("last_weather_update"),
+        },
+    }

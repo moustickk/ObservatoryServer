@@ -1,8 +1,7 @@
-from backend.common.settings_manager import (
-    load_settings
-)
+"""Lecture des reglages."""
+
+from backend.common.settings_manager import as_dict
 
 
 def get_config():
-
-    return load_settings()
+    return as_dict()

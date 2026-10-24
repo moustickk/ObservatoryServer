@@ -1,89 +1,39 @@
-from backend.dome.service import (
-    DomeService
-)
+"""Surveillance de l'etat du toit.
 
-from backend.dome.state import (
-    state_data,
-    save_current_state,
-    compute_position
-)
+Une seule boucle, un seul verrou cote DomeService. On ne journalise que les
+changements d'etat : l'ancienne version reecrivait tout le fichier de log
+chaque seconde.
+"""
 
-from backend.dome.logging import (
-    log_state
-)
+import logging
+import threading
 
 
-dome = DomeService()
+log = logging.getLogger(__name__)
+
+POLL_SECONDS = 1.0
 
 
-def sync_state():
+def monitor_loop(dome, stop_event):
+    log.info("Surveillance du toit demarree")
 
-    try:
+    while not stop_event.is_set():
+        try:
+            dome.sync()
+        except Exception:
+            log.exception("Erreur pendant la surveillance du toit")
 
-        arduino_state = dome.status()
+        stop_event.wait(POLL_SECONDS)
 
-        log_state(
-            f"Arduino returned: '{arduino_state}'"
-        )
+    log.info("Surveillance du toit arretee")
 
-        if arduino_state == "OPENED":
 
-            state_data["state"] = (
-                "OPENED"
-            )
-
-            state_data["position"] = 100
-
-        elif arduino_state == "CLOSED":
-
-            state_data["state"] = (
-                "CLOSED"
-            )
-
-            state_data["position"] = 0
-
-        elif arduino_state == "STOPPED":
-
-            state_data["position"] = (
-                compute_position()
-            )
-
-        elif arduino_state == "ERROR":
-
-            state_data["position"] = (
-                compute_position()
-            )
-
-            state_data["state"] = (
-                "ERROR"
-            )
-
-        elif arduino_state == "UNKNOWN":
-
-            state_data["state"] = (
-                "UNKNOWN"
-            )
-
-        elif arduino_state == "OPENING":
-
-            state_data["state"] = (
-                "OPENING"
-            )
-
-        elif arduino_state == "CLOSING":
-
-            state_data["state"] = (
-                "CLOSING"
-            )
-
-        save_current_state()
-
-        return arduino_state
-
-    except Exception as ex:
-
-        log_state(
-            f"Exception: {ex}"
-        )
-
-        return "ERROR"
+def start_monitor(dome, stop_event):
+    thread = threading.Thread(
+        target=monitor_loop,
+        args=(dome, stop_event),
+        name="dome-monitor",
+        daemon=True,
+    )
+    thread.start()
+    return thread

@@ -1,43 +1,32 @@
-from backend.common.settings_manager import (
-    load_settings,
-    save_settings
-)
+"""Mise a jour des reglages, avec validation.
+
+Les valeurs sont desormais typees d'apres settings_manager : impossible
+d'ecrire une chaine dans max_wind_speed et de casser l'evaluateur.
+"""
+
+from backend.common.settings_manager import update_setting
 
 
-def convert_value(value):
+class UnknownSetting(KeyError):
+    pass
 
-    if value.lower() == "true":
-        return True
 
-    if value.lower() == "false":
-        return False
+class InvalidSettingValue(ValueError):
+    pass
+
+
+def update_config(key, value):
 
     try:
+        settings = update_setting(key, value)
+    except KeyError:
+        raise UnknownSetting(key)
+    except ValueError as ex:
+        raise InvalidSettingValue(str(ex))
 
-        if "." in value:
-
-            return float(value)
-
-        return int(value)
-
-    except Exception:
-
-        return value
-
-
-def update_config(
-    key,
-    value
-):
-
-    settings = load_settings()
-
-    settings[key] = convert_value(
-        value
-    )
-
-    save_settings(
-        settings
-    )
-
-    return settings
+    return {
+        "key": key,
+        "value": settings[key],
+        "requires_restart": True,
+        "settings": settings,
+    }

@@ -1,103 +1,135 @@
+"""Application FastAPI de l'observatoire.
+
+Aucun acces materiel a l'import : tout est construit dans le lifespan via le
+conteneur. Le serveur demarre donc meme sans Arduino ni monture.
+"""
+
+import logging
 from contextlib import asynccontextmanager
-import threading
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 
-from backend.dome.start_monitor import (
-    start_monitor
-)
-
-from backend.common.health_api import (
-    get_health
-)
-
+from backend import container
+from backend.common.config_api import get_config
 from backend.common.config_update_api import (
-    update_config
+    InvalidSettingValue,
+    UnknownSetting,
+    update_config,
 )
+from backend.common.constants import APP_NAME, VERSION
+from backend.common.health import health_snapshot
 
-from backend.common.config_api import (
-    get_config
-)
 
-from backend.safety.service import (
-    SafetyService
-)
-
-from backend.safety.monitor import (
-    weather_monitor
-)
-
-from backend.dome.api import (
-    get_status as get_dome_status
-)
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    threading.Thread(
-        target=weather_monitor,
-        daemon=True
-    ).start()
+    services = container.init_services()
+    services.start()
 
-    start_monitor()
-
-    yield
+    try:
+        yield
+    finally:
+        container.reset_services()
 
 
 app = FastAPI(
-    lifespan=lifespan
+    title=APP_NAME,
+    version=VERSION,
+    lifespan=lifespan,
 )
 
-safety = SafetyService()
+
+def _services():
+    return container.get_services()
+
+
+def _command(result):
+
+    if not result.get("ok"):
+        log.warning("Commande refusee : %s", result.get("message"))
+
+    status_code = 200 if result.get("ok") else 409
+
+    return JSONResponse(status_code=status_code, content=result)
+
+
+# -- general -------------------------------------------------------------
 
 
 @app.get("/")
 def root():
 
+    services = _services()
+
     return {
-        "application": "ObservatoryServer",
-        "version": "3.0.0-alpha"
+        "application": APP_NAME,
+        "version": VERSION,
+        "simulation": services.simulation,
     }
-
-
-@app.get("/api/safety/status")
-def safety_status():
-
-    return safety.status()
-
-
-@app.get("/api/safety/device_state")
-def safety_device_state():
-
-    return safety.device_state()
-
-
-@app.get("/api/dome/status")
-def dome_status():
-
-    return get_dome_status()
-
-
-@app.get("/api/config")
-def config():
-
-    return get_config()
-
-
-@app.post("/api/config/{key}/{value}")
-def config_update(
-    key: str,
-    value: str
-):
-
-    return update_config(
-        key,
-        value
-    )
 
 
 @app.get("/api/health")
 def health():
+    return health_snapshot(_services())
 
-    return get_health()
+
+# -- toit ----------------------------------------------------------------
+
+
+@app.get("/api/dome/status")
+def dome_status():
+    return _services().dome.status()
+
+
+@app.post("/api/dome/open")
+def dome_open():
+    return _command(_services().dome.open())
+
+
+@app.post("/api/dome/close")
+def dome_close():
+    return _command(_services().dome.close())
+
+
+@app.post("/api/dome/stop")
+def dome_stop():
+    return _command(_services().dome.stop())
+
+
+# -- securite ------------------------------------------------------------
+
+
+@app.get("/api/safety/status")
+def safety_status():
+    return _services().safety.status()
+
+
+@app.get("/api/safety/device_state")
+def safety_device_state():
+    return _services().safety.device_state()
+
+
+# -- configuration -------------------------------------------------------
+
+
+@app.get("/api/config")
+def config():
+    return get_config()
+
+
+@app.post("/api/config/{key}/{value}")
+def config_update(key: str, value: str):
+
+    try:
+        return update_config(key, value)
+    except UnknownSetting as ex:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Reglage inconnu : {key}",
+        ) from None
+    except InvalidSettingValue as ex:
+        raise HTTPException(status_code=400, detail=str(ex)) from None
