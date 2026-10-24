@@ -29,6 +29,10 @@ def process_weather(weather):
             weather["wind"]
         )
 
+        state.weather_data["wind_gust"] = (
+            weather.get("wind_gust", 0)
+        )
+
         state.weather_data["clouds"] = (
             weather["clouds"]
         )

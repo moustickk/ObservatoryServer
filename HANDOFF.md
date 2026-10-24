@@ -35,7 +35,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 2b | terminée | conformité Alpaca validée sous NINA 3.3 (0 erreur 404 au polling) |
 | 3 | terminée | firmware robuste : `OK:`/`EVT:`, anti-rebond, rampes, parseur non bloquant |
 | 4 | terminée | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
-| 5 | à faire | météo fail-safe (données périmées ⇒ UNSAFE) |
+| 5 | terminée | météo fail-safe : jamais SAFE sur panne, rafales, pire cas de la fenêtre |
 | 6 | à faire | journalisation (fin du O(n²) de `write_log`) |
 | 7 | à faire | schéma de configuration + chemins compatibles installation |
 | 8 | à faire | interface web locale |
@@ -139,8 +139,9 @@ backend/
     link.py              MountLink : Ascom (EQMOD) / Simulated
     monitor.py           thread COM dédié + cache de AtPark
   safety/
-    monitor.py           boucle météo
+    monitor.py           boucle météo fail-safe
     agent.py             agent de sauvegarde (ferme sur UNSAFE)
+    weather_provider.py  Open-Meteo, pire cas de la fenêtre
     evaluator.py         seuils
     service.py           façade SafetyService
 firmware/
@@ -165,8 +166,8 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **49 tests** (protocole série, machine à états simulée, threads
-  dédiés, agent de sauvegarde). Lancer avec
+- `pytest` : **62 tests** (protocole série, machine à états simulée, threads
+  dédiés, agent de sauvegarde, météo fail-safe). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Phase 4 vérifiée en conditions réelles de serveur :
   - 20 lectures `shutterstatus` consécutives : médiane **3,4 ms**, max 6,1 ms
@@ -174,6 +175,9 @@ tests/
   - `abortslew` : 200 en **20 ms** ;
   - météo UNSAFE réelle (pluie 100 %) : l'agent a fermé le toit de lui-même
     13 s après un `STOP` manuel (`Agent de sauvegarde : closed`).
+- Phase 5 vérifiée contre l'API réelle : rafales **54 km/h** relevées (champ
+  ignoré auparavant), fenêtre d'une heure, verdict `UNSAFE` cohérent
+  (pluie 100 %, 1,1 mm, nuages 100 %).
 - Firmware réellement **compilé** avec `arduino-cli` (noyau `arduino:avr`
   1.8.8, cible Uno) : 4 484 octets de flash, 345 octets de RAM, aucune erreur.
 - **Firmware réellement téléversé et exécuté** sur l'Arduino Nano (COM4),
@@ -190,10 +194,6 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 ## Pièges connus (non corrigés)
 
 - `write_log` réécrit tout le fichier à chaque ligne : O(n²). Phase 6.
-- La météo peut rester **SAFE sur un cache périmé** (30 min). Phase 5.
-- `datetime.now()` au lieu d'un fuseau explicite (Europe/Paris).
-- Prévision : `next_index` au lieu d'un max sur la fenêtre, et
-  `wind_gusts_10m` non exploité. Phase 5.
 - Le firmware n'a pas d'encodeur : un toit déplacé à la main hors tension
   n'est pas détecté (la position serveur reste l'ancienne).
 - Une butée collée n'est détectée qu'en tentant de quitter la position
@@ -208,9 +208,11 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 5** : météo fail-safe (données périmées ou API en panne ⇒ UNSAFE),
-   `wind_gusts_10m`, max sur la fenêtre de prévision, fuseau explicite.
-2. **Phase 6** : journaux (`write_log` en O(n²)).
+1. **Phase 6** : journaux (`write_log` en O(n²), un fichier réécrit à chaque
+   ligne).
+2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
+   `simulation_mount` séparés et un moyen de neutraliser l'agent de
+   sauvegarde pendant l'essai.
 3. Essai au banc du firmware sur l'Arduino, avec la procédure de
    `firmware/README.md` (les deux sens ont déjà été validés).
 

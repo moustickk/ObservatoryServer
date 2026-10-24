@@ -17,6 +17,7 @@ last_good_data = None
 
 weather_data = {
     "wind": 0,
+    "wind_gust": 0,
     "clouds": 0,
     "rain_probability": 0,
     "rain_mm": 0,

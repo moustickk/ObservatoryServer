@@ -1,56 +1,58 @@
+"""Seuils de securite meteo.
+
+Chaque depassement ajoute un motif explicite : c'est ce que l'operateur lit
+dans `/api/health` et dans Alpaca. Un refus sans motif oblige a ouvrir les
+journaux, ce qui n'est pas acceptable en pleine nuit.
+
+Les valeurs venant du fournisseur sont deja des « pire cas » sur la fenetre
+de prevision (voir `weather_provider`) : ici on ne fait que comparer.
+"""
+
 from backend.safety.config import (
-    MAX_WIND_SPEED,
-    MAX_RAIN_PROBABILITY,
-    MAX_RAIN_MM,
     MAX_CLOUD_COVER,
-    MIN_TEMPERATURE
+    MAX_RAIN_MM,
+    MAX_RAIN_PROBABILITY,
+    MAX_WIND_GUST,
+    MAX_WIND_SPEED,
+    MIN_TEMPERATURE,
 )
+
+
+def _number(weather, key):
+    try:
+        return float(weather.get(key, 0) or 0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def evaluate_weather(weather):
 
     reasons = []
 
-    if weather["wind"] > MAX_WIND_SPEED:
+    wind = _number(weather, "wind")
+    gust = _number(weather, "wind_gust")
+    rain_probability = _number(weather, "rain_probability")
+    rain_mm = _number(weather, "rain_mm")
+    clouds = _number(weather, "clouds")
+    temperature = _number(weather, "temperature")
+    forecast_temperature = _number(weather, "forecast_temperature")
 
-        reasons.append(
-            f"VENT ({weather['wind']} km/h)"
-        )
+    if wind > MAX_WIND_SPEED:
+        reasons.append(f"VENT ({wind:g} km/h)")
 
-    if (
-        weather["rain_probability"]
-        > MAX_RAIN_PROBABILITY
-    ):
+    if gust > MAX_WIND_GUST:
+        reasons.append(f"RAFALES ({gust:g} km/h)")
 
-        reasons.append(
-            f"PLUIE ({weather['rain_probability']}%)"
-        )
+    if rain_probability > MAX_RAIN_PROBABILITY:
+        reasons.append(f"PLUIE ({rain_probability:g}%)")
 
-    if weather["rain_mm"] > MAX_RAIN_MM:
+    if rain_mm > MAX_RAIN_MM:
+        reasons.append(f"PLUIE ({rain_mm:g} mm)")
 
-        reasons.append(
-            f"PLUIE ({weather['rain_mm']} mm)"
-        )
+    if clouds > MAX_CLOUD_COVER:
+        reasons.append(f"NUAGES ({clouds:g}%)")
 
-    if weather["clouds"] > MAX_CLOUD_COVER:
+    if temperature <= MIN_TEMPERATURE or forecast_temperature <= MIN_TEMPERATURE:
+        reasons.append("RISQUE GEL")
 
-        reasons.append(
-            f"NUAGES ({weather['clouds']}%)"
-        )
-
-    if (
-        weather["temperature"]
-        <= MIN_TEMPERATURE
-        or
-        weather["forecast_temperature"]
-        <= MIN_TEMPERATURE
-    ):
-
-        reasons.append(
-            "RISQUE GEL"
-        )
-
-    return (
-        len(reasons) == 0,
-        reasons
-    )
+    return (len(reasons) == 0, reasons)

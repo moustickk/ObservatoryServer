@@ -1,25 +1,62 @@
-"""Boucle de surveillance meteo.
+"""Boucle de surveillance meteo, fail-safe.
 
-Phase 5 remplacera la logique de cache par un vrai comportement fail-safe
-(donnees perimees ou API en panne => UNSAFE).
+Regle de securite : **une panne du fournisseur ne vaut jamais SAFE**.
+
+L'ancienne version, en cas d'echec reseau, declarait SAFE des que le cache
+avait moins de 30 minutes — sans regarder ce que disait ce cache. Une mesure
+UNSAFE suivie d'une coupure reseau faisait donc passer le toit en SAFE, ce
+qui est exactement l'inverse du comportement attendu.
+
+Desormais, en cas d'echec :
+
+ - sans aucune mesure : UNSAFE (on ne sait rien) ;
+ - mesure trop ancienne : UNSAFE (elle ne decrit plus le present) ;
+ - mesure recente : on **rejoue son evaluation** et on conserve son verdict,
+   en indiquant l'age du cache. Une mesure recente disant « dangereux »
+   reste dangereuse.
 """
 
 import logging
-import time
 
 from backend.common.logs import safety_log
-from backend.safety.config import CACHE_TIMEOUT_MINUTES, UPDATE_INTERVAL
-from backend.safety.engine import process_weather
-from backend.safety.state import (
-    cache_valid,
-    set_safe,
-    set_unsafe,
-    weather_age_minutes,
+from backend.safety import state
+from backend.safety.config import (
+    MAX_WEATHER_AGE_MINUTES,
+    UPDATE_INTERVAL,
 )
+from backend.safety.engine import process_weather
+from backend.safety.evaluator import evaluate_weather
+from backend.safety.state import set_safe, set_unsafe, weather_age_minutes
 from backend.safety.weather_provider import get_weather
 
 
 log = logging.getLogger(__name__)
+
+
+def failure_decision(cached, age_minutes, max_age_minutes=MAX_WEATHER_AGE_MINUTES):
+    """Verdict quand le fournisseur est injoignable.
+
+    Retourne `(safe, message)`. Ne retourne jamais `True` sans avoir evalue
+    une mesure, et jamais `True` sur une mesure perimee.
+    """
+
+    if cached is None or age_minutes is None or age_minutes < 0:
+        return False, "UNSAFE | AUCUNE DONNEE METEO"
+
+    if age_minutes > max_age_minutes:
+        return False, (
+            f"UNSAFE | DONNEES PERIMEES "
+            f"({age_minutes} min > {max_age_minutes} min)"
+        )
+
+    safe, reasons = evaluate_weather(cached)
+
+    if safe:
+        return True, f"SAFE | CACHE {age_minutes} min"
+
+    return False, (
+        f"UNSAFE | CACHE {age_minutes} min [{', '.join(reasons)}]"
+    )
 
 
 def weather_monitor(stop_event=None):
@@ -41,22 +78,23 @@ def weather_monitor(stop_event=None):
 
         except Exception as ex:
 
-            if cache_valid(CACHE_TIMEOUT_MINUTES):
+            age = weather_age_minutes()
 
-                age = weather_age_minutes()
+            safe, message = failure_decision(state.last_good_data, age)
+            message = f"{message} ({ex})"
 
-                message = f"SAFE | CACHE UTILISE ({age} min)"
-
+            if safe:
                 set_safe(message)
-                safety_log(message)
-
+                log.warning("%s", message)
             else:
+                set_unsafe(message)
+                log.error("%s", message)
 
-                set_unsafe(f"UNSAFE | {ex}")
-                safety_log(f"UNSAFE | {ex}")
-                log.warning("Meteo indisponible : %s", ex)
+            safety_log(message)
 
         if stop_event is not None:
             stop_event.wait(UPDATE_INTERVAL)
         else:
+            import time
+
             time.sleep(UPDATE_INTERVAL)
