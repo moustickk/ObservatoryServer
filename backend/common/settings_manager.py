@@ -32,7 +32,9 @@ DEFAULT_SETTINGS = {
     "serial_port": "COM4",
     "baudrate": 115200,
     "full_travel_time": 45,
-    "max_travel_time": 55,
+    # Doit rester egal a ROOF_MAX_TRAVEL_MS du firmware (60 s) : le
+    # controleur est l'autorite, le serveur ne doit pas le devancer.
+    "max_travel_time": 60,
     # --- Monture ASCOM ---
     "telescope_driver": "EQMOD_SIM.Telescope",
     "park_timeout": 300,

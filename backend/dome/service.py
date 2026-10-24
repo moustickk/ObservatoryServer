@@ -10,11 +10,27 @@ import logging
 import threading
 
 from backend.dome.logging import log_close, log_open, log_stop
-from backend.dome.serial_link import LinkError
+from backend.dome.serial_link import CommandRejected, LinkError
 from backend.dome.state import RoofState
 
 
 log = logging.getLogger(__name__)
+
+# Refus benins : le controleur repond, le toit est en bon etat, il faut
+# simplement reessayer au bon moment. Ils ne declenchent pas d'alarme.
+BENIGN_REJECTIONS = ("BUSY",)
+
+# Traduction des refus du firmware en consignes utilisables par l'operateur
+# (le message remonte tel quel dans NINA).
+REJECTION_MESSAGES = {
+    "BUSY": "un mouvement de sens oppose est en cours : arreter le toit "
+            "d'abord (Stop / Abort), puis relancer la commande",
+    "FAULT": "le controleur est en defaut (fin de course, temps de trajet "
+             "depasse ou moteur bloque) : acquitter par STOP apres verification",
+    "LINE_TOO_LONG": "commande trop longue recue par le controleur",
+    "UNKNOWN_CMD": "commande inconnue du firmware : verifier que le "
+                   "controleur a bien la version attendue",
+}
 
 
 class DomeService:
@@ -50,6 +66,29 @@ class DomeService:
         self.state.save()
         log.error(message)
         return self._result(False, "ROOF_LINK", message)
+
+    def _rejected(self, action, error):
+        """Refus venu du controleur : ce n'est pas une panne de liaison.
+
+        Le toit repond et son etat est connu : on le conserve au lieu de le
+        declarer UNKNOWN, et on n'alarme que si le refus signale un defaut
+        (un BUSY est un simple concours de commandes).
+        """
+
+        if error.state:
+            self.state.set_state(error.state)
+
+        detail = REJECTION_MESSAGES.get(error.code, str(error))
+        message = f"Toit : {detail}"
+
+        if error.code in BENIGN_REJECTIONS:
+            log.warning("Toit %s : %s", action, message)
+        else:
+            self.state.raise_alarm(f"ROOF_{error.code}", message)
+            log.error("Toit %s : %s", action, message)
+
+        self.state.save()
+        return self._result(False, error.code, message)
 
     # -- interlock -------------------------------------------------------
 
@@ -97,6 +136,8 @@ class DomeService:
 
             try:
                 state = self.roof.send("OPEN")
+            except CommandRejected as ex:
+                return self._rejected("open", ex)
             except LinkError as ex:
                 return self._link_failure("open", ex)
 
@@ -115,6 +156,8 @@ class DomeService:
 
             try:
                 state = self.roof.send("CLOSE")
+            except CommandRejected as ex:
+                return self._rejected("close", ex)
             except LinkError as ex:
                 return self._link_failure("close", ex)
 
@@ -129,6 +172,8 @@ class DomeService:
         with self._lock:
             try:
                 state = self.roof.send("STOP")
+            except CommandRejected as ex:
+                return self._rejected("stop", ex)
             except LinkError as ex:
                 return self._link_failure("stop", ex)
 

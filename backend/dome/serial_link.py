@@ -4,8 +4,26 @@ Le reste du code ne connait que `RoofLink`. Deux implementations :
  - SerialRoofLink   : le vrai port serie
  - SimulatedRoofLink: un Arduino virtuel, pour developper sans materiel
 
-Le protocole actuel (texte, une ligne par reponse) est tolere ici, en
-attendant le protocole OK:/EVT: de la phase 3.
+Protocole du firmware (voir `firmware/RoofController.ino`) :
+
+    commande            reponse
+    PING / STATUS   ->  OK:<ETAT>
+    OPEN / CLOSE    ->  OK:<ETAT>        ou  ER:BUSY:<ETAT>
+    STOP            ->  OK:<ETAT>
+    (inconnue)      ->  ER:UNKNOWN_CMD:<ETAT>
+
+    messages asynchrones : EVT:<QUOI>:<ETAT>
+
+Deux consequences pour ce module :
+
+1. Une reponse de commande commence TOUJOURS par `OK:` ou `ER:`. Les lignes
+   `EVT:` peuvent arriver a tout moment et ne doivent jamais etre prises
+   pour la reponse a la commande en cours : c'est pourquoi elles sont
+   ecartees explicitement au lieu d'etre confondues avec un etat.
+
+2. Un refus du controleur (`ER:`) n'est pas une panne de liaison : le toit
+   est joignable et son etat est connu. On leve `CommandRejected`, que le
+   service traduit en refus propre, sans alarme de liaison.
 """
 
 import logging
@@ -27,16 +45,40 @@ KNOWN_STATES = (
     "UNKNOWN",
 )
 
+MOTION_STATES = ("OPENING", "CLOSING")
+
+OK_PREFIX = "OK:"
+ERROR_PREFIX = "ER:"
+EVENT_PREFIX = "EVT:"
+
 
 class LinkError(Exception):
     """Le lien avec le controleur est indisponible ou a echoue."""
 
 
+class CommandRejected(LinkError):
+    """Le controleur a refuse la commande, mais il repond.
+
+    Distinct de `LinkError` : il n'y a pas de panne, seulement un etat qui
+    interdit l'action (mouvement en cours, defaut non acquitte...).
+    """
+
+    def __init__(self, code, state=None):
+        self.code = (code or "ERREUR").strip().upper()
+        self.state = state if state in KNOWN_STATES else None
+
+        detail = f"refus du controleur ({self.code})"
+        if self.state:
+            detail += f", etat {self.state}"
+
+        super().__init__(detail)
+
+
 def parse_state(line):
     """Extrait un etat connu d'une ligne serie, quel que soit son habillage.
 
-    Tolere l'ancien format ("Etat initial : CLOSED", "OPENED") comme le
-    futur format prefixe ("OK:OPENED", "EVT:BOOT:CLOSED").
+    Le format du firmware termine toujours la ligne par l'etat courant, ce
+    qui permet de le lire sans connaitre le detail du message.
     """
 
     if not line:
@@ -51,6 +93,24 @@ def parse_state(line):
     for token in reversed(tokens):
         if token in KNOWN_STATES:
             return token
+
+    return None
+
+
+def parse_response(line):
+    """Analyse une reponse de commande.
+
+    Retourne `("ok", None, etat)` ou `("error", code, etat)`, ou None si la
+    ligne n'est pas une reponse de commande.
+    """
+
+    if line.startswith(OK_PREFIX):
+        return ("ok", None, parse_state(line))
+
+    if line.startswith(ERROR_PREFIX):
+        parts = line.split(":")
+        code = parts[1].strip().upper() if len(parts) > 1 else ""
+        return ("error", code or "ERREUR", parse_state(line))
 
     return None
 
@@ -99,7 +159,8 @@ class SerialRoofLink(RoofLink):
         )
 
         # L'ouverture du port redemarre l'Arduino (DTR) : on laisse le temps
-        # au boot puis on jette la banniere "Etat initial : ...".
+        # au boot puis on jette la banniere EVT:BOOT:..., qui ne repond a
+        # aucune commande.
         time.sleep(1.5)
         ser.reset_input_buffer()
 
@@ -154,12 +215,13 @@ class SerialRoofLink(RoofLink):
                 self._drop(str(ex))
                 raise LinkError(str(ex)) from ex
 
-            # On lit jusqu'a obtenir un etat reconnaissable : les lignes
-            # asynchrones du firmware sont ignorees plutot que confondues
-            # avec la reponse a la commande.
-            while time.monotonic() < deadline:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+
                 try:
-                    self._ser.timeout = max(0.05, deadline - time.monotonic())
+                    self._ser.timeout = max(0.05, remaining)
                     raw = self._ser.readline()
                 except (serial.SerialException, OSError) as ex:
                     self._drop(str(ex))
@@ -172,37 +234,64 @@ class SerialRoofLink(RoofLink):
                 if not line:
                     continue
 
-                state = parse_state(line)
-                if state is not None:
+                if line.startswith(EVENT_PREFIX):
+                    # Evenement du firmware : informatif, jamais une reponse.
+                    log.debug("Toit, evenement : %s", line)
+                    continue
+
+                parsed = parse_response(line)
+
+                if parsed is None:
+                    if parse_state(line) is not None:
+                        raise LinkError(
+                            "reponse sans prefixe OK:/ER: : le firmware du "
+                            "controleur est trop ancien, il faut le reflasher"
+                        )
+                    log.debug("Ligne serie ignoree : %r", line)
+                    continue
+
+                kind, code, state = parsed
+
+                if kind == "ok":
+                    if state is None:
+                        raise LinkError(f"Reponse sans etat exploitable : {line!r}")
                     return state
 
-                log.debug("Ligne serie ignoree : %r", line)
+                raise CommandRejected(code, state)
 
         raise LinkError(f"pas de reponse exploitable a {command}")
 
 
 class SimulatedRoofLink(RoofLink):
-    """Arduino virtuel : reproduit la machine a etats du firmware."""
+    """Arduino virtuel : reproduit les regles visibles du firmware.
+
+    Ce qui est reproduit : refus d'inversion de sens sans arret prealable,
+    defaut bloquant, acquittement par STOP, arret de securite sur depassement
+    du temps de trajet. Ce qui ne l'est pas : les rampes, l'anti-rebond et
+    la detection de non-mouvement, qui demandent un vrai moteur.
+    """
 
     description = "simulation"
 
-    def __init__(self, travel_time=45.0, max_travel_time=55.0, initial_state="CLOSED"):
+    def __init__(self, travel_time=45.0, max_travel_time=60.0, initial_state="CLOSED"):
         self.travel_time = float(travel_time)
         self.max_travel_time = float(max_travel_time)
         self._lock = threading.RLock()
         self._state = initial_state if initial_state in KNOWN_STATES else "UNKNOWN"
         self._motion_start = None
+        self._fault = False
 
     # -- interne ---------------------------------------------------------
 
     def _advance(self):
-        if self._state not in ("OPENING", "CLOSING") or self._motion_start is None:
+        if self._state not in MOTION_STATES or self._motion_start is None:
             return
 
         elapsed = time.time() - self._motion_start
 
         if elapsed >= self.max_travel_time:
             self._finish("ERROR")
+            self._fault = True
         elif elapsed >= self.travel_time:
             self._finish("OPENED" if self._state == "OPENING" else "CLOSED")
 
@@ -213,6 +302,25 @@ class SimulatedRoofLink(RoofLink):
     def _start(self, state):
         self._state = state
         self._motion_start = time.time()
+
+    def _move(self, command):
+        target = "OPENED" if command == "OPEN" else "CLOSED"
+        moving = "OPENING" if command == "OPEN" else "CLOSING"
+
+        if self._fault:
+            raise CommandRejected("FAULT", self._state)
+
+        if self._state == moving:
+            return  # deja dans ce sens : idempotent
+
+        if self._state in MOTION_STATES:
+            # Le firmware refuse une inversion directe : STOP d'abord.
+            raise CommandRejected("BUSY", self._state)
+
+        if self._state == target:
+            return
+
+        self._start(moving)
 
     # -- API -------------------------------------------------------------
 
@@ -226,28 +334,21 @@ class SimulatedRoofLink(RoofLink):
 
             cmd = (command or "").strip().upper()
 
-            if cmd == "STATUS":
+            if cmd in ("STATUS", "PING"):
                 return self._state
 
-            if cmd == "OPEN":
-                if self._state not in ("OPENED", "OPENING"):
-                    self._start("OPENING")
-                return self._state
-
-            if cmd == "CLOSE":
-                if self._state not in ("CLOSED", "CLOSING"):
-                    self._start("CLOSING")
+            if cmd in ("OPEN", "CLOSE"):
+                self._move(cmd)
                 return self._state
 
             if cmd == "STOP":
+                # Seule commande qui acquitte un defaut.
+                self._fault = False
                 self._state = "STOPPED"
                 self._motion_start = None
                 return self._state
 
-            if cmd == "PING":
-                return self._state
-
-            return "ERROR"
+            raise CommandRejected("UNKNOWN_CMD", self._state)
 
 
 class UnavailableRoofLink(RoofLink):
@@ -275,7 +376,7 @@ def build_roof_link(settings):
         log.info("Toit en SIMULATION (aucun mouvement physique)")
         return SimulatedRoofLink(
             travel_time=settings.get("full_travel_time", 45),
-            max_travel_time=settings.get("max_travel_time", 55),
+            max_travel_time=settings.get("max_travel_time", 60),
         )
 
     port = settings.get("serial_port", "COM4")

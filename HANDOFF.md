@@ -33,7 +33,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 1 | terminée | démarrage sans matériel, config validée, interlock monture |
 | 2 | terminée | couche Alpaca : management, Dome, SafetyMonitor, découverte UDP |
 | 2b | terminée | conformité Alpaca validée sous NINA 3.3 (0 erreur 404 au polling) |
-| 3 | à faire | firmware robuste (`OK:`/`EVT:`, anti-rebond, rampe, parseur non bloquant, `MAX_TRAVEL_TIME` 55 s) |
+| 3 | terminée | firmware robuste : `OK:`/`EVT:`, anti-rebond, rampes, parseur non bloquant |
 | 4 | à faire | thread COM dédié, grâce de parkage 180 s, agent de sauvegarde |
 | 5 | à faire | météo fail-safe (données périmées ⇒ UNSAFE) |
 | 6 | à faire | journalisation (fin du O(n²) de `write_log`) |
@@ -66,6 +66,15 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   l'import, le serveur démarre toujours.
 - **Un seul drapeau `simulation`** pilote aujourd'hui toit et monture. La
   séparation `simulation_dome` / `simulation_mount` est prévue.
+- **Le firmware est l'autorité sur la sécurité du toit.** Les fins de course,
+  le temps de trajet maximal et la détection de non-mouvement sont traités
+  par l'Arduino ; le serveur ne fait que demander et lire.
+- **Changement de sens refusé** par le firmware (`ER:BUSY`) : il faut un
+  `STOP` explicite. Le serveur n'improvise pas d'arrêt à la place de
+  l'opérateur.
+- **`STOP` acquitte un défaut.** C'est le geste de reprise après un
+  `TIMEOUT`, `NO_MOTION` ou `LIMITS`. Aucune autre commande n'efface un
+  défaut.
 - Interface finale : **UI web locale** servie par FastAPI, pas de Qt.
 - Packaging prévu : **PyInstaller `onedir` + Inno Setup**, en **tray app**
   (jamais un service Windows : l'accès COM/ASCOM exige la session utilisateur).
@@ -75,17 +84,20 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 
 1. `DomeService.open/close` appellent `_interlock()` avant tout mouvement.
 2. Un refus lève une alarme persistante (`MOUNT_NOT_PARKED`,
-   `MOUNT_UNKNOWN`, `ROOF_LINK`) exposée par `/api/health`.
+   `MOUNT_UNKNOWN`, `ROOF_LINK`, `ROOF_FAULT`) exposée par `/api/health`.
+   Seul un `BUSY` du firmware n'alarme pas : le toit est en bon état.
 3. En Alpaca, un refus devient `ErrorNumber 1035` (InvalidOperation) avec le
    message métier, jamais un succès silencieux.
 4. Le SafetyMonitor est fail-safe : erreur de lecture ⇒ `IsSafe = false`.
 5. `stop()` fige la position au lieu de la laisser dériver.
+6. Le firmware coupe le moteur sur fin de course **sans rampe** et refuse
+   tout mouvement tant qu'un défaut n'est pas acquitté.
 
 ## Configuration actuelle (`data/config/settings.json`)
 
 - `simulation: true`, `server_port: 11111`
 - `serial_port: COM4`, `baudrate: 115200`
-- `full_travel_time: 45`, `max_travel_time: 55`
+- `full_travel_time: 45`, `max_travel_time: 60` (= `ROOF_MAX_TRAVEL_MS`)
 - `telescope_driver: EQMOD_SIM.Telescope` ← **à passer à `EQMOD.Telescope` en réel**
 - `mount_check_mode: strict`, `close_anyway: false`
 - seuils météo : vent 60, rafales 70, pluie 30 % / 0,1 mm, nuages 80 %, T° 0,5 °C
@@ -124,7 +136,12 @@ backend/
     monitor.py           boucle météo
     evaluator.py         seuils
     service.py           façade SafetyService
-firmware/RoofController.ino
+firmware/
+  RoofController.ino     firmware du toit (protocole OK:/ER:/EVT:)
+  roof_config.h          brochage, temporisations, vitesses
+  README.md              câblage, protocole, essai au banc, réglages
+tests/
+  test_roof_protocol.py  34 tests sans matériel (protocole, simulation, service)
 ```
 
 ## Tests effectués
@@ -135,9 +152,21 @@ firmware/RoofController.ino
   tous les `shutterstatus`, erreurs 1024/1035, `connected=false`, SafetyMonitor,
   découverte UDP 32227.
 - 8 contrôles d'interlock via Alpaca : refus 1035, alarme, toit immobile.
+- 15 contrôles sur la machine de production (Python 3.15) après transfert.
+- **NINA 3.3 réelle** : 309 requêtes, 0 erreur 404 après ajout des propriétés
+  manquantes (`canpark`, `canfindhome`, `cansetpark`, `cansetazimuth`,
+  `devicestate`).
+- 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
+  message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
+- `pytest` : 34 tests du protocole série et de la machine à états simulée.
+  Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.
+- Firmware réellement **compilé** avec `arduino-cli` (noyau `arduino:avr`
+  1.8.8, cible Uno) : 4 484 octets de flash, 345 octets de RAM, aucune erreur.
+  Le comportement à l'exécution ne peut être validé que sur l'Arduino :
+  procédure d'essai au banc dans `firmware/README.md`.
 
 Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
-`smoke_phase2_interlock.py` (sur la machine de développement).
+`smoke_phase2_interlock.py`, `smoke_conformite.py`, `smoke_phase3.py`.
 
 ## Pièges connus (non corrigés)
 
@@ -148,16 +177,27 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
   `wind_gusts_10m` non exploité. Phase 5.
 - Appels COM encore dans le thread de la requête. Phase 4.
 - Grâce de parkage de 180 s non implémentée : refus immédiat aujourd'hui.
+- Le firmware n'a pas d'encodeur : un toit déplacé à la main hors tension
+  n'est pas détecté (la position serveur reste l'ancienne).
+- Une butée collée n'est détectée qu'en tentant de quitter la position
+  (`NO_MOTION`), pas au repos.
+- `analogWrite` sur D5/D6 est à ~980 Hz : léger sifflement du moteur.
+- Le dossier `firmware/` ne porte pas le nom du croquis : copier les deux
+  fichiers dans un dossier `RoofController/` avant `arduino-cli compile`.
 
 ## Prochaines étapes immédiates
 
-1. **Phase 3** : firmware (protocole `OK:`/`EVT:`, anti-rebond, rampe,
-   parseur non bloquant, `MAX_TRAVEL_TIME = 55`).
-2. **Phase 4** : thread COM dédié + grâce de parkage + agent de sauvegarde.
-3. Puis 5 et 6 avant toute mise en service définitive.
+1. **Phase 4** : thread COM dédié (les 17 interrogations NINA par cycle ne
+   doivent pas traverser une requête HTTP), grâce de parkage 180 s, agent de
+   sauvegarde météo.
+2. Puis 5 (météo fail-safe) et 6 (journaux) avant toute mise en service.
+3. Essai au banc du firmware sur l'Arduino, avec la procédure de
+   `firmware/README.md`.
 
 ## Mise en service réelle — checklist
 
+- [ ] flasher le firmware et dérouler l'essai au banc (`firmware/README.md`)
+- [ ] mesurer le temps de trajet réel, ajuster `full_travel_time`
 - [ ] `simulation: false`
 - [ ] `serial_port` = vrai port Arduino
 - [ ] `telescope_driver` = `EQMOD.Telescope`
