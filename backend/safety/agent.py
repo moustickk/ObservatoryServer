@@ -13,8 +13,10 @@ Regles
    laisse `park_grace_seconds` (180 s par defaut) pour finir son parkage. Une
    monture qui se parque pendant deux minutes est normale ; un toit qui se
    ferme sur elle ne l'est pas.
-3. **Pas d'acharnement.** Une tentative ratee est retentee apres un delai de
-   repos, et l'agent ne se re-arme qu'au retour du SAFE.
+3. **Pas d'acharnement, mais pas de trou non plus.** Un *echec* est
+   retente apres un delai de repos. Une fermeture *reussie* ne met aucun
+   delai : si le toit est rouvert sous la pluie, il doit etre referme tout
+   de suite, pas deux minutes plus tard.
 4. **L'interlock reste maitre.** L'agent appelle `DomeService.close()`, donc
    les memes verifications s'appliquent. Il ne force jamais rien.
 """
@@ -51,7 +53,7 @@ class BackupAgent:
         self.park_timeout = float(settings.get("park_timeout", 300))
         self.stop_event = stop_event or threading.Event()
 
-        self._handled = False
+        self._failed = False
         self._last_attempt = 0.0
 
     # -- cycle de vie ----------------------------------------------------
@@ -108,7 +110,7 @@ class BackupAgent:
             return "no_data"
 
         if safe:
-            self._handled = False
+            self._failed = False
             return "safe"
 
         state = self.dome.state.get("state")
@@ -119,11 +121,14 @@ class BackupAgent:
         if now is None:
             now = time.monotonic()
 
-        if self._handled and (now - self._last_attempt) < RETRY_SECONDS:
+        # Le delai de repos ne s'applique qu'apres un ECHEC. Apres une
+        # fermeture reussie, une nouvelle ouverture doit etre traitee tout
+        # de suite : sinon le toit reste ouvert deux minutes sous la pluie,
+        # ce qui vide la garantie de son sens.
+        if self._failed and (now - self._last_attempt) < RETRY_SECONDS:
             return "backoff"
 
         self._last_attempt = now
-        self._handled = True
 
         # Une ouverture en cours doit etre interrompue avant de fermer : le
         # firmware refuse une inversion directe (ER:BUSY).
@@ -131,6 +136,7 @@ class BackupAgent:
             self.dome.stop()
 
         if not self._wait_for_park():
+            self._failed = True
             message = (
                 "Meteo dangereuse et monture non parquee apres "
                 f"{self.grace_seconds:.0f} s : le toit n'a pas ete ferme "
@@ -143,7 +149,10 @@ class BackupAgent:
         result = self.dome.close()
 
         if result.get("ok"):
+            self._failed = False
             return "closed"
+
+        self._failed = True
 
         log.warning(
             "Fermeture de sauvegarde refusee : %s",

@@ -381,6 +381,22 @@ def test_agent_ne_ferme_pas_deux_fois():
     assert dome.closed == 1
 
 
+def test_agent_referme_sans_delai_apres_une_reouverture():
+    """Le delai de repos ne doit s'appliquer qu'aux echecs."""
+
+    dome = StubDome(state="OPENED", parked=True)
+    agent = make_agent(dome, StubSafety(safe=False))
+
+    assert agent.tick() == "closed"
+    assert dome.closed == 1
+
+    # Le toit est rouvert aussitot, meteo toujours dangereuse.
+    dome.state.data["state"] = "OPENED"
+
+    assert agent.tick() == "closed"
+    assert dome.closed == 2
+
+
 def test_agent_ne_reattente_pas_immediatement():
     dome = StubDome(state="OPENED", parked=False)
     agent = make_agent(dome, StubSafety(safe=False), grace=0.02)

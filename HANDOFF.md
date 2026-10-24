@@ -177,7 +177,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **73 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **74 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Phase 4 vérifiée en conditions réelles de serveur :
@@ -193,6 +193,9 @@ tests/
   comme après 21 000 (ratio ×1,05), là où l'ancien code relisait tout à
   chaque ligne. 200 écritures depuis 8 threads : aucune perdue. Journaux
   réels vérifiés après redémarrage (`roof.log`, `meteo_log.txt`).
+- Agent : réouverture sous UNSAFE refermée **sans délai** (le repos de 120 s
+  ne s'applique plus qu'après un échec, sinon le toit restait ouvert deux
+  minutes).
 - **Essai réel du 24/10**, `simulation: false` : toit sur COM4, monture
   EQMOD_SIM (`AtPark = True`). Ouverture puis fermeture commandées depuis
   NINA (18:54:13 puis 18:55:37), retour en `CLOSED`, position 0, aucune
