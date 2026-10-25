@@ -74,8 +74,12 @@ def test_la_purge_retire_seulement_les_lignes_anciennes(tmp_path):
     old = (datetime.now() - timedelta(hours=49)).strftime("%Y-%m-%d %H:%M:%S")
     recent = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 
+    # Une ligne au nouveau format (jj-mm-aaaa) doit aussi etre purgee.
+    old_new = (datetime.now() - timedelta(hours=50)).strftime("%d-%m-%Y %H:%M:%S")
+
     log_file.write_text(
         f"[{old}] vieille mesure\n"
+        f"[{old_new}] vieille mesure au nouveau format\n"
         f"ligne sans horodatage\n"
         f"[{recent}] mesure recente\n",
         encoding="utf-8",
@@ -89,8 +93,6 @@ def test_la_purge_retire_seulement_les_lignes_anciennes(tmp_path):
     assert "vieille mesure" not in content
     assert "ligne sans horodatage" in content
     assert "mesure recente" in content
-
-
 def test_un_message_multiligne_reste_sur_une_ligne(tmp_path, monkeypatch):
     monkeypatch.setattr(logger, "LOG_DIR", tmp_path)
     monkeypatch.setattr(logger, "_last_purge", {})
@@ -113,4 +115,4 @@ def test_le_format_commence_par_un_horodatage(tmp_path, monkeypatch):
 
     assert line.startswith("[")
     assert line[21:] == " OPEN command"
-    datetime.strptime(line[1:20], "%Y-%m-%d %H:%M:%S")
+    datetime.strptime(line[1:20], logger.TIMESTAMP_FORMAT)

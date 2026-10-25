@@ -28,6 +28,7 @@ import webbrowser
 from PIL import Image, ImageDraw
 import pystray
 
+from backend.common.constants import LOG_DATE_FORMAT, LOG_FORMAT
 from backend.common.paths import APP_DIR, LOG_DIR, is_frozen
 from backend.common.restart import RESTART_EXIT_CODE, SUPERVISOR_ENV
 from backend.common.settings_manager import get_int
@@ -276,8 +277,8 @@ def run_tray():
 
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)-8s %(name)s | %(message)s",
-        datefmt="%H:%M:%S",
+        format=LOG_FORMAT,
+        datefmt=LOG_DATE_FORMAT,
         filename=str(LOG_DIR / "tray.log"),
         encoding="utf-8",
     )

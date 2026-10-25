@@ -12,12 +12,33 @@ volontaire d'une demande de redemarrage.
 
 import logging
 import sys
+from copy import deepcopy
 
 import uvicorn
+from uvicorn.config import LOGGING_CONFIG
 
 from backend.app import app
+from backend.common.constants import LOG_ACCESS_FORMAT, LOG_DATE_FORMAT, LOG_FORMAT
 from backend.common.restart import RESTART_EXIT_CODE, restart_requested
 from backend.common.settings_manager import get_int
+
+
+def _uvicorn_log_config():
+    """Journalisation d'uvicorn au meme format que le reste.
+
+    Par defaut, uvicorn n'horodate pas ses lignes d'acces et n'affiche que
+    l'heure pour les autres : dans un fichier, c'est inexploitable.
+    """
+
+    config = deepcopy(LOGGING_CONFIG)
+
+    config["formatters"]["default"]["fmt"] = LOG_FORMAT
+    config["formatters"]["default"]["datefmt"] = LOG_DATE_FORMAT
+
+    config["formatters"]["access"]["fmt"] = LOG_ACCESS_FORMAT
+    config["formatters"]["access"]["datefmt"] = LOG_DATE_FORMAT
+
+    return config
 
 
 def _configure_logging():
@@ -39,8 +60,8 @@ def _configure_logging():
 
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)-8s %(name)s | %(message)s",
-        datefmt="%H:%M:%S",
+        format=LOG_FORMAT,
+        datefmt=LOG_DATE_FORMAT,
         handlers=handlers,
     )
 
@@ -60,6 +81,7 @@ def run_server():
             app,
             host="0.0.0.0",
             port=port,
+            log_config=_uvicorn_log_config(),
         )
     except KeyboardInterrupt:
         pass

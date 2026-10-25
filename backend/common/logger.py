@@ -26,10 +26,16 @@ import threading
 import time
 from datetime import datetime
 
+from backend.common.constants import LOG_DATE_FORMAT
 from backend.common.paths import LOG_DIR
 
 
-TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+TIMESTAMP_FORMAT = LOG_DATE_FORMAT
+
+# Les fichiers existants contiennent des dates ISO (2026-10-25) : la purge
+# doit continuer a les comprendre, sinon d'anciennes lignes ne seraient
+# jamais supprimees.
+LEGACY_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 RETENTION_SECONDS = 48 * 3600
 
@@ -62,16 +68,20 @@ def _parse_timestamp(line):
 
         return None
 
-    try:
+    for date_format in (TIMESTAMP_FORMAT, LEGACY_TIMESTAMP_FORMAT):
 
-        return datetime.strptime(
-            line[1:20],
-            TIMESTAMP_FORMAT
-        )
+        try:
 
-    except ValueError:
+            return datetime.strptime(
+                line[1:20],
+                date_format
+            )
 
-        return None
+        except ValueError:
+
+            continue
+
+    return None
 
 
 def _purge(log_file, retention_seconds=RETENTION_SECONDS):

@@ -104,6 +104,11 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   (le processus relancé n'a plus de console). Limite : suppose un lancement
   par `python -m backend.run_api` ; l'exe empaqueté devra passer par la tray
   app (phase 9).
+- **Journaux datés en `jj-mm-aaaa hh:mm:ss`.** L'ancien format n'affichait
+  que l'heure, et les lignes d'accès d'uvicorn n'avaient aucun horodatage :
+  un fichier de journal était inexploitable le lendemain. Le format est
+  commun à `server.log`, `tray.log`, `roof.log` et `meteo_log.txt` ; la purge
+  accepte encore l'ancien format ISO pour les lignes déjà écrites.
 - **Fichiers de l'interface servis en `no-cache`.** Sans cet en-tête, une
   mise à jour de l'exe laissait le navigateur réutiliser un `app.js` ancien :
   le bouton apparaissait mais restait inactif. Le cache est désormais
