@@ -351,6 +351,10 @@ tests/
 - Agent : réouverture sous UNSAFE refermée **sans délai** (le repos de 120 s
   ne s'applique plus qu'après un échec, sinon le toit restait ouvert deux
   minutes).
+- **Monture réelle validée le 25/10** (`EQMOD.Telescope`, toit ouvert,
+  monture déparquée, séance simulée) : le forçage UNSAFE déclenche l'agent en
+  **moins d'une seconde**. C'est la chaîne complète — météo, décision,
+  interlock, driver ASCOM, toit — en conditions réelles.
 - **Atelier Arduino vérifié en réel** : compilation du croquis avec la
   configuration générée (4 484 octets de flash, 345 de RAM), téléversement
   sur COM4 depuis l'application installée (liaison suspendue puis reprise),
