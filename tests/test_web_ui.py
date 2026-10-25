@@ -131,3 +131,12 @@ def test_licone_de_notification_est_branchee():
     assert "/api/system/tray-icon" in routes
     assert "/api/system/tray-icon" in js
     assert "toggleTrayIcon" in js
+
+
+def test_la_meteo_forcee_est_branchee():
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    routes = {getattr(route, "path", None) for route in app.routes}
+
+    assert "/api/safety/override" in routes
+    assert "/api/safety/override" in js
+    assert "applyForce" in js

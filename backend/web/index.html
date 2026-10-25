@@ -23,6 +23,7 @@
   </header>
 
   <div id="alarm" class="alarm hidden" role="alert"></div>
+  <div id="override-banner" class="forced hidden" role="status"></div>
   <div id="notice" class="notice hidden" role="status"></div>
 
   <main>
@@ -73,6 +74,14 @@
       </dl>
 
       <p class="hint" id="agent-state">Agent de sauvegarde : —</p>
+
+      <div class="override-row">
+        <span class="hint">Météo simulée :</span>
+        <button class="ghost small" data-force="auto">Réel</button>
+        <button class="ghost small" data-force="SAFE">SAFE</button>
+        <button class="warn small" data-force="UNSAFE">UNSAFE</button>
+      </div>
+      <p id="override-hint" class="hint"></p>
     </section>
 
     <section class="card wide arduino" id="arduino-card">

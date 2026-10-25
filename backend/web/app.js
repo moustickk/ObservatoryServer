@@ -185,6 +185,47 @@ function renderWeather(status) {
     age === null || age === undefined || age < 0 ? "—" : `${age} min`;
 
   $("w-last").textContent = status.last_weather_update || "—";
+
+  const forced = status.forced === true;
+
+  if (forced) {
+    const minutes = Math.max(
+      0,
+      Math.floor((status.forced_remaining_seconds || 0) / 60),
+    );
+    show(
+      $("override-banner"),
+      `Météo forcée : ${status.forced_value} (simulation) — retour au réel dans ${minutes} min.`,
+    );
+    $("override-hint").textContent = `Verdict imposé : ${status.forced_value}.`;
+  } else {
+    hide($("override-banner"));
+    $("override-hint").textContent = "";
+  }
+}
+
+async function applyForce(value) {
+  if (
+    value === "UNSAFE" &&
+    !confirm(
+      "Forcer UNSAFE ?\n\nL'agent de sauvegarde fermera le toit s'il est ouvert.",
+    )
+  ) {
+    return;
+  }
+
+  const result = await api(
+    `/api/safety/override?value=${encodeURIComponent(value)}&minutes=10`,
+    { method: "POST" },
+  );
+
+  if (!result.ok) {
+    const data = result.data || {};
+    $("override-hint").textContent = data.detail || "Modification impossible.";
+    return;
+  }
+
+  refresh();
 }
 
 // -- rafraichissement ----------------------------------------------------
@@ -632,6 +673,10 @@ async function toggleTrayIcon() {
 }
 
 $("tray-promote").addEventListener("change", toggleTrayIcon);
+
+for (const button of document.querySelectorAll("[data-force]")) {
+  button.addEventListener("click", () => applyForce(button.dataset.force));
+}
 
 // -- atelier Arduino -----------------------------------------------------
 

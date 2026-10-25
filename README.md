@@ -90,6 +90,13 @@ quitter.
 | **Atelier Arduino** | compilation et téléversement du firmware |
 | **Configuration** | les réglages, groupés par domaine |
 
+La carte **Sécurité météo** contient trois boutons — **Réel**, **SAFE**,
+**UNSAFE** — qui forcent le verdict pendant 10 minutes. C'est le moyen de
+tester la fermeture automatique, le refus d'interlock ou le comportement de
+NINA sans attendre la pluie. Le forçage est signalé par un bandeau, répercuté
+dans Alpaca, et **expire tout seul** : impossible de l'oublier et de laisser
+le toit ouvert (ou fermé) pour de bon.
+
 Chaque section a sa couleur ; la carte météo passe au rouge quand le verdict
 est UNSAFE. Le bouton **Documentation** ouvre le guide, la recette et la
 documentation du firmware directement dans le navigateur ; le bouton

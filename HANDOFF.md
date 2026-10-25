@@ -120,6 +120,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   n'a plus de journalisation propre : ses messages remontent au gestionnaire
   unique, donc une seule rotation cohérente. La sortie brute du processus va
   dans `console.log`.
+- **Verdict météo forçable, mais limité dans le temps.** Trois boutons
+  (Réel / SAFE / UNSAFE) imposent le verdict pendant 10 minutes, répercuté
+  dans l'interface *et* dans Alpaca. L'expiration automatique et le bandeau
+  évitent qu'un oubli laisse le toit dans un état artificiel.
 - **Visibilité de l'icône pilotable.** Windows cache les nouvelles icônes
   dans le chevron ; le choix est stocké par icône dans
   `HKCU\Control Panel\NotifyIconSettings` (`IsPromoted`). L'interface lit
@@ -190,6 +194,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/server/restart (POST, relance apres configuration)
 - http://localhost:11111/api/arduino/status (outillage, noyaux, ports)
 - http://localhost:11111/api/arduino/job (avancement du dernier travail)
+- http://localhost:11111/api/safety/override (verdict météo forcé, 10 min)
 - http://localhost:11111/api/system/autostart (état et bascule)
 - http://localhost:11111/api/system/tray-icon (visibilité de l'icône)
 - http://localhost:11111/api/docs (guide, recette, firmware en HTML)

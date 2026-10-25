@@ -64,6 +64,28 @@ h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
 .notice { border-color: #34506e; background: #14202c; color: #a8c7ea; font-weight: 500; }
 .hidden { display: none !important; }
 
+.forced {
+  margin: 16px 24px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #5a4a20;
+  background: #2a2415;
+  color: #f0c674;
+  font-weight: 600;
+}
+
+.override-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.override-row .hint { margin: 0; }
+#override-hint { margin: 6px 0 0; color: #f0c674; }
+
 main {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));

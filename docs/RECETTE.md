@@ -100,11 +100,21 @@ Durée indicative : 1 h 30, dont 30 min de mouvements réels.
 **Test de fermeture automatique** (à faire toit ouvert, temps sec) :
 
 - [ ] Ouvrir le toit, attendre l'état `OPENED`.
-- [ ] Forcer un verdict défavorable : `max_wind_speed` = 1, Enregistrer,
-      **Redémarrer**.
-- [ ] **Attendu** : l'agent ferme le toit dans les 15 s (journal
-      `Agent de sauvegarde : closed`).
-- [ ] Remettre `max_wind_speed` à sa valeur, Enregistrer, Redémarrer.
+- [ ] Dans la carte **Sécurité météo**, cliquer **UNSAFE** (verdict forcé
+      10 min).
+- [ ] **Attendu** : bandeau « Météo forcée », carte rouge, et l'agent ferme
+      le toit dans les 15 s (journal `Agent de sauvegarde : closed`).
+- [ ] Cliquer **Réel** pour revenir au verdict mesuré.
+- [ ] Vérifier qu'Alpaca suit : `/api/v1/safetymonitor/0/issafe` passe à
+      `false` pendant le forçage, puis revient à `true`.
+
+**Test de refus avec monture en séquence** (toit ouvert) :
+
+- [ ] Forcer **UNSAFE**, puis déparquer la monture avant que l'agent n'agisse.
+- [ ] **Attendu** : l'agent ne peut pas fermer, alarme
+      `ROOF_UNSAFE_NOT_PARKED`, toit **immobile**. C'est le comportement voulu
+      avec `close_anyway = false`.
+- [ ] Revenir à **Réel**, parquer la monture.
 
 **Test de non-décision sans données** :
 

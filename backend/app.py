@@ -352,6 +352,20 @@ def safety_device_state():
     return _services().safety.device_state()
 
 
+@app.get("/api/safety/override")
+def safety_override_status():
+    return _services().safety.force_status()
+
+
+@app.post("/api/safety/override")
+def safety_override(value: str, minutes: int = 10):
+
+    try:
+        return _services().safety.force(value, minutes)
+    except ValueError as ex:
+        raise HTTPException(status_code=400, detail=str(ex)) from None
+
+
 # -- configuration -------------------------------------------------------
 
 
