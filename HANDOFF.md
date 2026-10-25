@@ -40,7 +40,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 7 | terminée | chemins compatibles installation (`%ProgramData%`) + schéma de configuration |
 | 8 | terminée | interface web locale (état, météo, commandes, configuration, scan des pilotes ASCOM) |
 | 9 | terminée | tray app, PyInstaller onedir, installateur Inno Setup, démarrage auto |
-| 10 | à faire | atelier Arduino via `arduino-cli` |
+| 10 | terminée | atelier Arduino : configuration générée, compilation, téléversement |
 | 11 | à faire | recette et documentation utilisateur |
 
 ## Commits
@@ -93,6 +93,11 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **`STOP` acquitte un défaut.** C'est le geste de reprise après un
   `TIMEOUT`, `NO_MOTION` ou `LIMITS`. Aucune autre commande n'efface un
   défaut.
+- **Téléversement Arduino : la liaison série est suspendue.** avrdude ne
+  peut pas ouvrir COM4 tant que le serveur le tient. L'atelier refuse si le
+  toit est en mouvement, libère le port, téléverse, puis reprend la liaison
+  et attend que le contrôleur réponde (il redémarre). Le drapeau
+  `maintenance` empêche l'agent de sauvegarde d'agir pendant l'opération.
 - **Tray app superviseur.** Le serveur est un processus enfant de l'icône,
   jamais un service Windows (COM/ASCOM exige la session utilisateur). Code de
   sortie 0 = quitter, 75 = relancer : c'est le superviseur qui relance, ce qui
@@ -160,6 +165,8 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/health
 - http://localhost:11111/api/config/schema (types, groupes, descriptions)
 - http://localhost:11111/api/server/restart (POST, relance apres configuration)
+- http://localhost:11111/api/arduino/status (outillage, noyaux, ports)
+- http://localhost:11111/api/arduino/job (avancement du dernier travail)
 - http://localhost:11111/api/logs (liste et fin des journaux)
 - http://localhost:11111/ui/#logs (ouvre directement la fenêtre des journaux)
 - http://localhost:11111/api/mount/drivers (pilotes ASCOM installes)
@@ -190,6 +197,10 @@ Installateur (`packaging\ObservatoryServer.iss`) :
   règle de pare-feu facultative sur le port 11111 ;
 - la désinstallation conserve les données (configuration, journaux, état).
 
+Mise à jour : **quitter l'application avant de lancer l'installateur**. Le
+Restart Manager de Windows ne parvient pas à fermer l'icône, et l'installateur
+silencieux annule alors l'opération (code 5).
+
 Vérifié : installation silencieuse dans un dossier temporaire, application
 lancée (port 11113, interface et journaux OK), désinstallation propre, données
 conservées. L'installation réelle en `Program Files` n'a pas été exécutée ici :
@@ -207,6 +218,10 @@ launcher.py              point d'entrée : icône (défaut) ou --server
 backend/
   server.py              run_server() partagé dev/exe, code de sortie 75
   tray.py                icône, supervision, menu
+  arduino/
+    config_header.py     génération de roof_config.h depuis les réglages
+    toolchain.py         arduino-cli : détection, noyaux, ports, exécution
+    workshop.py          travaux compilation/téléversement, suspension série
   app.py                 FastAPI, lifespan, aucune initialisation matérielle à l'import
   run_api.py             point d'entrée uvicorn
   container.py           construit et démarre les services
@@ -291,6 +306,10 @@ tests/
 - Agent : réouverture sous UNSAFE refermée **sans délai** (le repos de 120 s
   ne s'applique plus qu'après un échec, sinon le toit restait ouvert deux
   minutes).
+- **Atelier Arduino vérifié en réel** : compilation du croquis avec la
+  configuration générée (4 484 octets de flash, 345 de RAM), téléversement
+  sur COM4 depuis l'application installée (liaison suspendue puis reprise),
+  contrôleur de nouveau joignable après redémarrage. 123 tests pytest.
 - **Installateur Inno Setup** vérifié : installation silencieuse, lancement
   de l'app installée (interface + journaux), désinstallation, conservation
   des données. 21,7 Mo, compilation sans avertissement.
@@ -327,8 +346,7 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 10** : atelier Arduino via `arduino-cli` (génération de
-   `roof_config.h`, compilation, téléversement).
+1. **Phase 11** : recette et documentation utilisateur.
 2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
    `simulation_mount` séparés et un moyen de neutraliser l'agent de
    sauvegarde pendant l'essai.

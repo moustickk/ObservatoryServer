@@ -77,6 +77,30 @@
       </p>
     </section>
 
+    <section class="card wide" id="arduino-card">
+      <div class="card-head">
+        <h2>Atelier Arduino</h2>
+        <span id="arduino-state" class="tag">…</span>
+      </div>
+
+      <p id="arduino-toolchain" class="hint">Chargement de l'outillage…</p>
+
+      <div class="actions">
+        <select id="arduino-fqbn" aria-label="Carte cible"></select>
+        <select id="arduino-port" aria-label="Port de téléversement"></select>
+        <button id="arduino-compile" class="ghost">Compiler</button>
+        <button id="arduino-upload" class="warn">Téléverser</button>
+      </div>
+
+      <p class="hint">
+        Le téléversement suspend la liaison série, coupe le moteur et redémarre
+        l'Arduino. Le toit doit être immobile.
+      </p>
+
+      <p id="arduino-error" class="error hidden"></p>
+      <pre id="arduino-output" class="console">—</pre>
+    </section>
+
     <section class="card wide" id="config-card">
       <div class="card-head">
         <h2>Configuration</h2>

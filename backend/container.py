@@ -16,6 +16,7 @@ import threading
 
 from backend.common import settings_manager
 from backend.common.alpaca.discovery import DiscoveryResponder
+from backend.arduino.workshop import ArduinoWorkshop
 from backend.dome.controller import RoofController
 from backend.dome.monitor import start_monitor
 from backend.dome.serial_link import build_roof_link
@@ -48,6 +49,7 @@ class Services:
 
         self.dome = DomeService(self.roof, self.mount, self.settings)
         self.safety = SafetyService()
+        self.workshop = ArduinoWorkshop(self.dome)
 
         self.agent = BackupAgent(
             self.dome,

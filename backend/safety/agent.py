@@ -102,6 +102,9 @@ class BackupAgent:
         if not self.enabled:
             return "disabled"
 
+        if getattr(self.dome, "maintenance", False):
+            return "maintenance"
+
         status = self.safety.status()
         safe = status.get("safe")
         age = status.get("data_age_minutes", -1)

@@ -208,6 +208,23 @@ class SerialRoofLink(RoofLink):
 
     # -- API -------------------------------------------------------------
 
+    def close(self):
+        """Libere le port serie (arret du serveur, televersement Arduino)."""
+
+        with self._lock:
+            if self._ser is not None:
+                try:
+                    self._ser.close()
+                except Exception:
+                    pass
+                self._ser = None
+
+    def reset_retry(self):
+        """Autorise une reconnexion immediate au prochain envoi."""
+
+        with self._lock:
+            self._last_attempt = 0.0
+
     @property
     def connected(self):
         return self._ser is not None and self._ser.is_open

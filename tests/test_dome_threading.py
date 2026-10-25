@@ -405,6 +405,18 @@ def test_agent_ne_reattente_pas_immediatement():
     assert agent.tick() == "backoff"
 
 
+def test_agent_ne_fait_rien_pendant_la_maintenance():
+    """Televersement Arduino : la liaison est suspendue, l'agent se tait."""
+
+    dome = StubDome(state="CLOSED", parked=True)
+    dome.maintenance = True
+
+    agent = make_agent(dome, StubSafety(safe=False))
+
+    assert agent.tick() == "maintenance"
+    assert dome.closed == 0
+
+
 def test_agent_desactive_ne_ferme_rien():
     """Essai supervise : l'agent doit rester muet, meme sous la pluie."""
 

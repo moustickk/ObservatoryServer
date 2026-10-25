@@ -94,3 +94,22 @@ def test_les_commandes_sont_locales_mais_alpaca_reste_ouvert():
     # NINA doit pouvoir commander le toit depuis une autre machine.
     assert requires_local_client("/api/v1/dome/0/openshutter") is False
     assert requires_local_client("/management/v1/configureddevices") is False
+
+
+def test_l_atelier_arduino_est_branche():
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    routes = {getattr(route, "path", None) for route in app.routes}
+
+    for endpoint in (
+        "/api/arduino/status",
+        "/api/arduino/job",
+        "/api/arduino/compile",
+        "/api/arduino/upload",
+    ):
+        assert endpoint in routes, endpoint
+
+    assert "/api/arduino/status" in js
+    assert "/api/arduino/job" in js
+    # Les actions sont construites dans une chaine : on verifie les appels.
+    assert 'startArduino("compile")' in js
+    assert 'startArduino("upload")' in js

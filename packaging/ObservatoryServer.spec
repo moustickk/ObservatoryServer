@@ -38,6 +38,7 @@ a = Analysis(
     datas=[
         (str(ROOT / "backend" / "web"), "backend/web"),
         (str(ROOT / "assets" / "observatory.ico"), "assets"),
+        (str(ROOT / "firmware" / "RoofController"), "firmware/RoofController"),
     ],
     hiddenimports=hiddenimports,
     hookspath=[],

@@ -106,6 +106,35 @@ class RoofController:
         except Exception:  # pragma: no cover - fermeture best effort
             log.debug("Fermeture de la liaison toit : erreur ignoree", exc_info=True)
 
+    # -- suspension (atelier Arduino) ------------------------------------
+
+    def pause(self):
+        """Libere le port serie pour un televersement.
+
+        Le thread est arrete et le port ferme : avrdude ne peut pas ouvrir
+        COM4 tant qu'un autre processus le tient. L'appelant doit avoir
+        verifie que le toit est immobile.
+        """
+
+        log.warning("Liaison serie suspendue (port libere)")
+        self.stop()
+
+        try:
+            self.link.close()
+        except Exception:
+            log.debug("Fermeture du port pendant la suspension", exc_info=True)
+
+    def resume(self):
+        """Reprend la liaison apres un televersement."""
+
+        reset = getattr(self.link, "reset_retry", None)
+
+        if callable(reset):
+            reset()
+
+        self.start()
+        log.warning("Liaison serie reprise")
+
     # -- API -------------------------------------------------------------
 
     def command(self, name, timeout=COMMAND_TIMEOUT):

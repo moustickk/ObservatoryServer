@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend import container
+from backend.arduino.workshop import WorkshopError
 from backend.common import settings_manager
 from backend.common.restart import schedule_restart
 from backend.mount.drivers import list_drivers
@@ -240,6 +241,45 @@ def logs_tail(name: str, lines: int = 200):
         "size": size,
         "truncated": truncated,
     }
+
+
+# -- atelier Arduino -----------------------------------------------------
+
+@app.get("/api/arduino/status")
+def arduino_status():
+    return _services().workshop.status()
+
+
+@app.get("/api/arduino/header")
+def arduino_header():
+    return {"header": _services().workshop.header_preview()}
+
+
+@app.get("/api/arduino/job")
+def arduino_job():
+    return _services().workshop.job.snapshot()
+
+
+@app.post("/api/arduino/compile")
+def arduino_compile(fqbn: str | None = None):
+
+    try:
+        _services().workshop.start_compile(fqbn)
+    except WorkshopError as ex:
+        return JSONResponse(status_code=409, content={"message": str(ex)})
+
+    return JSONResponse(status_code=202, content={"ok": True})
+
+
+@app.post("/api/arduino/upload")
+def arduino_upload(fqbn: str | None = None, port: str | None = None):
+
+    try:
+        _services().workshop.start_upload(fqbn, port)
+    except WorkshopError as ex:
+        return JSONResponse(status_code=409, content={"message": str(ex)})
+
+    return JSONResponse(status_code=202, content={"ok": True})
 
 
 # -- securite ------------------------------------------------------------

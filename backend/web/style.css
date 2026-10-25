@@ -271,6 +271,25 @@ dialog::backdrop { background: rgba(0, 0, 0, .65); }
 }
 #logs-meta { margin: 0; padding: 8px 16px 12px; }
 
+/* -- atelier Arduino --------------------------------------------------- */
+
+.console {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 260px;
+  overflow: auto;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #cfd8e3;
+}
+#arduino-toolchain { margin: 0 0 12px; }
+
 @media (max-width: 600px) {
   header, main, footer { padding-left: 14px; padding-right: 14px; }
   .alarm, .notice { margin-left: 14px; margin-right: 14px; }

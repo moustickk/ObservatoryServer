@@ -46,6 +46,11 @@ class DomeService:
         self._lock = threading.RLock()
         self._parking = False
 
+        # Passe a True pendant un televersement Arduino : la liaison serie
+        # est suspendue, il ne faut ni lire d'etat (il serait faux) ni laisser
+        # l'agent de sauvegarde tenter une commande.
+        self.maintenance = False
+
     # -- resultats -------------------------------------------------------
 
     def _result(self, ok, code=None, message=None):
@@ -237,6 +242,11 @@ class DomeService:
         repond plus : on le traduit en UNKNOWN plutot que de presenter un
         etat qui n'est peut-etre plus vrai.
         """
+
+        if self.maintenance:
+            # Televersement en cours : la liaison est suspendue. On conserve
+            # le dernier etat connu plutot que de le declarer perime.
+            return self.state.get("state")
 
         snapshot = self.roof.snapshot()
         previous = self.state.get("state")

@@ -505,6 +505,142 @@ async function restartServer() {
   }
 }
 
+// -- atelier Arduino -----------------------------------------------------
+
+const ARDUINO_BOARDS = [
+  { value: "arduino:avr:nano", label: "Arduino Nano (bootloader récent)" },
+  { value: "arduino:avr:nano:cpu=atmega328old", label: "Arduino Nano (ancien bootloader)" },
+  { value: "arduino:avr:uno", label: "Arduino Uno" },
+];
+
+let arduinoTimer = null;
+
+function setArduinoState(text, kind) {
+  const tag = $("arduino-state");
+  tag.textContent = text;
+  tag.className = `tag ${kind || ""}`;
+}
+
+async function loadArduino() {
+  const result = await api("/api/arduino/status");
+
+  if (!result.ok) {
+    setArduinoState("indisponible", "off");
+    return;
+  }
+
+  const data = result.data;
+
+  const fqbn = $("arduino-fqbn");
+  if (!fqbn.options.length) {
+    for (const board of ARDUINO_BOARDS) {
+      fqbn.append(new Option(board.label, board.value));
+    }
+  }
+  if (data.fqbn) {
+    fqbn.value = data.fqbn;
+  }
+
+  const port = $("arduino-port");
+  const previous = port.value;
+  port.replaceChildren();
+
+  const known = new Set();
+  for (const entry of data.ports || []) {
+    const label = `${entry.address} — ${entry.board || entry.protocol || "série"}`;
+    port.append(new Option(label, entry.address));
+    known.add(entry.address);
+  }
+
+  const wanted = data.port || previous;
+  if (wanted && !known.has(wanted)) {
+    port.append(new Option(wanted, wanted));
+  }
+  if (wanted) {
+    port.value = wanted;
+  }
+
+  const cores = (data.cores || [])
+    .map((core) => `${core.id} ${core.installed}`)
+    .join(", ");
+
+  $("arduino-toolchain").textContent = data.available
+    ? `arduino-cli ${data.version || "?"} · ${cores || "aucun noyau installé"} · croquis ${data.sketch ? "présent" : "absent"}`
+    : "arduino-cli introuvable : vérifier l'installation de l'IDE Arduino, ou renseigner arduino_cli_path.";
+
+  if (!arduinoTimer) {
+    setArduinoState(data.available ? "prêt" : "indisponible", data.available ? "on" : "off");
+  }
+}
+
+async function startArduino(action) {
+  hide($("arduino-error"));
+
+  if (
+    action === "upload" &&
+    !confirm(
+      "Téléverser le firmware ?\n\n" +
+        "Le moteur sera coupé et l'Arduino redémarré.\n" +
+        "Le toit doit être immobile.",
+    )
+  ) {
+    return;
+  }
+
+  const params = new URLSearchParams({
+    fqbn: $("arduino-fqbn").value,
+    port: $("arduino-port").value,
+  });
+
+  const result = await api(`/api/arduino/${action}?${params}`, { method: "POST" });
+
+  if (!result.ok) {
+    const data = result.data || {};
+    show($("arduino-error"), data.message || data.detail || `Refus (${result.status})`);
+    return;
+  }
+
+  setArduinoState(action === "upload" ? "téléversement…" : "compilation…", "");
+  $("arduino-output").textContent = "Démarrage…";
+
+  pollArduino();
+}
+
+function pollArduino() {
+  if (arduinoTimer) {
+    clearInterval(arduinoTimer);
+  }
+
+  arduinoTimer = setInterval(async () => {
+    const result = await api("/api/arduino/job");
+
+    if (!result.ok) {
+      return;
+    }
+
+    const job = result.data;
+    const output = $("arduino-output");
+
+    output.textContent = (job.output || []).join("\n") || "…";
+    output.scrollTop = output.scrollHeight;
+
+    if (job.state === "running") {
+      setArduinoState("en cours…", "");
+      return;
+    }
+
+    clearInterval(arduinoTimer);
+    arduinoTimer = null;
+
+    if (job.state === "done") {
+      setArduinoState("terminé", "on");
+      await loadArduino();
+    } else if (job.state === "error") {
+      setArduinoState("échec", "off");
+    }
+  }, 1000);
+}
+
 // -- journaux ------------------------------------------------------------
 
 const logsDialog = $("logs-dialog");
@@ -619,7 +755,11 @@ $("btn-save").addEventListener("click", saveConfig);
 $("btn-reload").addEventListener("click", loadConfig);
 $("btn-restart").addEventListener("click", restartServer);
 
+$("arduino-compile").addEventListener("click", () => startArduino("compile"));
+$("arduino-upload").addEventListener("click", () => startArduino("upload"));
+
 loadConfig();
+loadArduino();
 refresh();
 setInterval(refresh, POLL_MS);
 

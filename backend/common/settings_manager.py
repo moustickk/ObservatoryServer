@@ -67,6 +67,28 @@ DEFAULT_SETTINGS = {
     # L'agent qui ferme le toit sur UNSAFE. A ne desactiver que pour un essai
     # supervise : sans lui, plus aucune fermeture automatique.
     "safety_agent_enabled": True,
+    # --- Atelier Arduino ---
+    # Vide = detection automatique (installation de l'IDE Arduino, PATH).
+    "arduino_cli_path": "",
+    "arduino_fqbn": "arduino:avr:nano",
+    # Vide = utilise serial_port.
+    "arduino_upload_port": "",
+    # Brochage du controleur.
+    "pin_limit_open": 2,
+    "pin_limit_closed": 3,
+    "pin_bts_rpwm": 5,
+    "pin_bts_lpwm": 6,
+    "pin_bts_ren": 7,
+    "pin_bts_len": 8,
+    # Temporisations du firmware, en millisecondes.
+    "roof_no_motion_ms": 4000,
+    "roof_debounce_ms": 30,
+    "roof_direction_dead_ms": 400,
+    "roof_ramp_start_ms": 900,
+    "roof_ramp_stop_ms": 200,
+    # Vitesses (rapport cyclique 0-255).
+    "roof_pwm_min": 110,
+    "roof_pwm_max": 255,
 }
 
 _lock = threading.RLock()
@@ -111,10 +133,32 @@ SETTING_INFO = {
     "weather_cache_minutes": ("meteo", "Duree de validite du cache meteo."),
     "weather_update_seconds": ("meteo", "Intervalle de rafraichissement meteo, en secondes."),
     "safety_agent_enabled": ("meteo", "Fermeture automatique du toit quand la meteo est UNSAFE."),
+    # atelier
+    "arduino_cli_path": ("arduino", "Chemin d'arduino-cli. Vide : detection automatique (IDE Arduino, PATH)."),
+    "arduino_fqbn": ("arduino", "Carte cible pour la compilation et le televersement."),
+    "arduino_upload_port": ("arduino", "Port de televersement. Vide : utilise serial_port."),
+    "pin_limit_open": ("arduino", "Broche du fin de course d'ouverture."),
+    "pin_limit_closed": ("arduino", "Broche du fin de course de fermeture."),
+    "pin_bts_rpwm": ("arduino", "Broche RPWM du driver BTS7960 (sens + vitesse)."),
+    "pin_bts_lpwm": ("arduino", "Broche LPWM du driver BTS7960 (sens + vitesse)."),
+    "pin_bts_ren": ("arduino", "Broche R_EN du driver BTS7960."),
+    "pin_bts_len": ("arduino", "Broche L_EN du driver BTS7960."),
+    "roof_no_motion_ms": ("arduino", "Delai avant defaut si la butee de depart ne se relache pas, en ms."),
+    "roof_debounce_ms": ("arduino", "Anti-rebond des fins de course, en ms."),
+    "roof_direction_dead_ms": ("arduino", "Temps mort entre deux sens, en ms."),
+    "roof_ramp_start_ms": ("arduino", "Duree de la rampe de demarrage, en ms."),
+    "roof_ramp_stop_ms": ("arduino", "Duree de la rampe d'arret sur STOP, en ms."),
+    "roof_pwm_min": ("arduino", "Rapport cyclique de depart (0-255)."),
+    "roof_pwm_max": ("arduino", "Rapport cyclique maximal (0-255)."),
 }
 
 SETTING_CHOICES = {
     "mount_check_mode": ("strict", "disabled"),
+    "arduino_fqbn": (
+        "arduino:avr:nano",
+        "arduino:avr:nano:cpu=atmega328old",
+        "arduino:avr:uno",
+    ),
 }
 
 # Identifiants Alpaca : stables par nature. Les modifier cree un appareil en
@@ -123,7 +167,7 @@ SETTING_CHOICES = {
 # de configuration a la main.
 READ_ONLY_SETTINGS = ("dome_unique_id", "safety_unique_id")
 
-SETTING_GROUPS = ("general", "toit", "monture", "meteo")
+SETTING_GROUPS = ("general", "toit", "monture", "meteo", "arduino")
 
 
 def _type_name(value):
