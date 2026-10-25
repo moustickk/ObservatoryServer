@@ -136,11 +136,31 @@ function renderDome(dome, agentEnabled) {
   } else if (notice.textContent.startsWith("Agent")) {
     hide(notice);
   }
+}
 
-  $("agent-state").textContent =
-    agentEnabled === false
-      ? "Agent de sauvegarde désactivé : aucune fermeture automatique."
-      : "Agent de sauvegarde actif : ferme le toit si la météo devient UNSAFE.";
+const AGENT_STATES = {
+  idle: "en veille",
+  safe: "en veille",
+  already: "toit déjà fermé",
+  no_data: "aucune donnée météo",
+  waiting_park: "attente du parkage de la monture",
+  parking: "parkage de la monture en cours",
+  closed: "toit fermé suite à la météo",
+  not_parked: "monture non parquée — toit NON fermé",
+  refused: "fermeture refusée",
+  backoff: "nouvelle tentative différée",
+  maintenance: "maintenance (téléversement)",
+  disabled: "désactivé",
+};
+
+function agentLabel(safety) {
+  if (safety.agent_enabled === false) {
+    return "Agent de sauvegarde désactivé : aucune fermeture automatique.";
+  }
+
+  const state = AGENT_STATES[safety.agent_state] || "en veille";
+
+  return `Agent de sauvegarde actif — ${state}.`;
 }
 
 function renderHeader(health) {
@@ -245,6 +265,7 @@ async function refresh() {
 
     renderHeader(health.data);
     renderDome(health.data.dome || {}, (health.data.safety || {}).agent_enabled);
+    $("agent-state").textContent = agentLabel(health.data.safety || {});
 
     const safety = await api("/api/safety/status");
     if (safety.ok) {

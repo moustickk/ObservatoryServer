@@ -77,3 +77,13 @@ def test_alpaca_voit_le_verdict_force():
     state.set_forced("UNSAFE", 600)
 
     assert SafetyService().is_safe() is False
+
+
+def test_le_forcage_reveille_l_agent():
+    """Pas besoin d'attendre le cycle : l'agent doit etre reveille."""
+
+    state.wakeup.clear()
+
+    SafetyService().force("unsafe", 1)
+
+    assert state.wakeup.is_set()

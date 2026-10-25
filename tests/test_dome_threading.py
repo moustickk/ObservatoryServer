@@ -503,3 +503,14 @@ def test_park_mount_repond_sans_bloquer(monkeypatch, tmp_path):
         time.sleep(0.01)
 
     assert mount.park_calls == 1
+
+
+def test_lagent_expose_son_etat():
+    dome = StubDome(state="OPENED", parked=True)
+    agent = make_agent(dome, StubSafety(safe=False))
+
+    assert agent.snapshot()["state"] == "idle"
+
+    agent.tick()
+
+    assert agent.snapshot()["state"] == "closed"

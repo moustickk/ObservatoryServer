@@ -102,8 +102,11 @@ Durée indicative : 1 h 30, dont 30 min de mouvements réels.
 - [ ] Ouvrir le toit, attendre l'état `OPENED`.
 - [ ] Dans la carte **Sécurité météo**, cliquer **UNSAFE** (verdict forcé
       10 min).
-- [ ] **Attendu** : bandeau « Météo forcée », carte rouge, et l'agent ferme
-      le toit dans les 15 s (journal `Agent de sauvegarde : closed`).
+- [ ] **Attendu** : bandeau « Météo forcée », carte rouge, et l'agent réagit
+      **immédiatement** (moins d'une seconde, ligne d'état de l'agent).
+- [ ] Si la monture est parquée : fermeture du toit (~47 s).
+- [ ] Si la monture ne l'est pas et `auto_park_mount` est actif : parkage
+      d'abord (durée réelle du driver), puis fermeture.
 - [ ] Cliquer **Réel** pour revenir au verdict mesuré.
 - [ ] Vérifier qu'Alpaca suit : `/api/v1/safetymonitor/0/issafe` passe à
       `false` pendant le forçage, puis revient à `true`.

@@ -74,4 +74,8 @@ def process_weather(weather):
             reasons
         )
 
+    # Une mesure fraiche peut changer le verdict : l'agent ne doit pas
+    # attendre le prochain cycle pour agir.
+    state.notify_change()
+
     return safe

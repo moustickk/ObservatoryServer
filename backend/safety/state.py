@@ -33,6 +33,14 @@ forced_value = None
 
 forced_until = 0.0
 
+# Reveil immediat de l'agent de sauvegarde : quand le verdict change (météo
+# ou forçage), il ne doit pas attendre le prochain cycle.
+wakeup = threading.Event()
+
+
+def notify_change():
+    wakeup.set()
+
 
 def _now():
     return time.time()

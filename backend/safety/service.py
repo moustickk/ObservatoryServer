@@ -44,6 +44,7 @@ class SafetyService:
         if text in ("", "AUTO", "REEL", "REAL"):
 
             state.set_forced(None, 0)
+            state.notify_change()
             safety_log("METEO | retour au verdict reel")
             return self.force_status()
 
@@ -60,6 +61,8 @@ class SafetyService:
         minutes = max(1, min(minutes, 60))
 
         state.set_forced(text, minutes * 60)
+
+        state.notify_change()
 
         safety_log(f"METEO | verdict FORCE : {text} pendant {minutes} min")
 

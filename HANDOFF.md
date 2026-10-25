@@ -120,6 +120,11 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   n'a plus de journalisation propre : ses messages remontent au gestionnaire
   unique, donc une seule rotation cohérente. La sortie brute du processus va
   dans `console.log`.
+- **Réveil immédiat de l'agent.** Un changement de verdict (mesure ou
+  forçage) pose un événement partagé : l'agent n'attend plus son cycle de
+  5 s. Son état courant (`parking`, `waiting_park`, `closed`, `not_parked`…)
+  est exposé dans `/api/health` et affiché sous la météo — sans quoi une
+  attente de parkage ressemble à une panne.
 - **Verdict météo forçable, mais limité dans le temps.** Trois boutons
   (Réel / SAFE / UNSAFE) imposent le verdict pendant 10 minutes, répercuté
   dans l'interface *et* dans Alpaca. L'expiration automatique et le bandeau

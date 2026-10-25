@@ -90,6 +90,12 @@ quitter.
 | **Atelier Arduino** | compilation et téléversement du firmware |
 | **Configuration** | les réglages, groupés par domaine |
 
+L'agent réagit **immédiatement** à un changement de verdict (météo réelle ou
+forçage) : il n'attend pas un cycle de surveillance. S'il doit parquer la
+monture avant de fermer, le délai visible est celui du parkage, pas celui de
+la décision. La ligne sous les mesures indique ce qu'il fait : « parkage en
+cours », « attente du parkage », « toit fermé suite à la météo », etc.
+
 La carte **Sécurité météo** contient trois boutons — **Réel**, **SAFE**,
 **UNSAFE** — qui forcent le verdict pendant 10 minutes. C'est le moyen de
 tester la fermeture automatique, le refus d'interlock ou le comportement de

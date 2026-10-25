@@ -25,5 +25,6 @@ def health_snapshot(services):
             "data_age_minutes": safety.get("data_age_minutes"),
             "last_weather_update": safety.get("last_weather_update"),
             "agent_enabled": bool(getattr(services.agent, "enabled", False)),
+            "agent_state": getattr(services.agent, "status", "unknown"),
         },
     }

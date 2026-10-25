@@ -25,11 +25,15 @@ import logging
 import threading
 import time
 
+from backend.safety import state as safety_state
+
 
 log = logging.getLogger(__name__)
 
 # Frequence de lecture de l'etat meteo (variable locale, pas d'appel reseau).
-CHECK_SECONDS = 15.0
+# Un changement de verdict reveille l'agent immediatement : ce delai n'est
+# qu'un filet de securite.
+CHECK_SECONDS = 5.0
 
 # Delai avant de retenter une fermeture qui a echoue.
 RETRY_SECONDS = 120.0
@@ -55,6 +59,10 @@ class BackupAgent:
 
         self._failed = False
         self._last_attempt = 0.0
+
+        # Etat lisible par l'interface : "que fait l'agent en ce moment ?"
+        self.status = "idle"
+        self.last_change = 0.0
 
     # -- cycle de vie ----------------------------------------------------
 
@@ -90,9 +98,28 @@ class BackupAgent:
             except Exception:
                 log.exception("Agent de sauvegarde : erreur inattendue")
 
-            self.stop_event.wait(CHECK_SECONDS)
+            safety_state.wakeup.wait(CHECK_SECONDS)
+            safety_state.wakeup.clear()
 
         log.info("Agent de sauvegarde arrete")
+
+    # -- etat ------------------------------------------------------------
+
+    def snapshot(self):
+
+        return {
+            "enabled": self.enabled,
+            "state": self.status,
+            "maintenance": bool(getattr(self.dome, "maintenance", False)),
+        }
+
+    def _done(self, action):
+        """Memorise la decision pour l'affichage, et la retourne."""
+
+        self.status = action
+        self.last_change = time.time()
+
+        return action
 
     # -- decision --------------------------------------------------------
 
@@ -100,26 +127,26 @@ class BackupAgent:
         """Un tour de decision. Retourne une chaine courte (utile aux tests)."""
 
         if not self.enabled:
-            return "disabled"
+            return self._done("disabled")
 
         if getattr(self.dome, "maintenance", False):
-            return "maintenance"
+            return self._done("maintenance")
 
         status = self.safety.status()
         safe = status.get("safe")
         age = status.get("data_age_minutes", -1)
 
         if age is None or age < 0:
-            return "no_data"
+            return self._done("no_data")
 
         if safe:
             self._failed = False
-            return "safe"
+            return self._done("safe")
 
-        state = self.dome.state.get("state")
+        roof_state = self.dome.state.get("state")
 
-        if state in MOTION_DONE_STATES:
-            return "already"
+        if roof_state in MOTION_DONE_STATES:
+            return self._done("already")
 
         if now is None:
             now = time.monotonic()
@@ -129,13 +156,13 @@ class BackupAgent:
         # de suite : sinon le toit reste ouvert deux minutes sous la pluie,
         # ce qui vide la garantie de son sens.
         if self._failed and (now - self._last_attempt) < RETRY_SECONDS:
-            return "backoff"
+            return self._done("backoff")
 
         self._last_attempt = now
 
         # Une ouverture en cours doit etre interrompue avant de fermer : le
         # firmware refuse une inversion directe (ER:BUSY).
-        if state == "OPENING":
+        if roof_state == "OPENING":
             self.dome.stop()
 
         if not self._wait_for_park():
@@ -147,13 +174,13 @@ class BackupAgent:
             )
             self.dome.state.raise_alarm("ROOF_UNSAFE_NOT_PARKED", message)
             log.error(message)
-            return "not_parked"
+            return self._done("not_parked")
 
         result = self.dome.close()
 
         if result.get("ok"):
             self._failed = False
-            return "closed"
+            return self._done("closed")
 
         self._failed = True
 
@@ -161,7 +188,7 @@ class BackupAgent:
             "Fermeture de sauvegarde refusee : %s",
             result.get("message") or result.get("code"),
         )
-        return "refused"
+        return self._done("refused")
 
     # -- attente de parkage ----------------------------------------------
 
@@ -184,6 +211,8 @@ class BackupAgent:
                 self.park_timeout,
             )
 
+            self.status = "parking"
+
             try:
                 if self.dome.mount.park(self.park_timeout):
                     log.info("Monture parquee par l'agent de sauvegarde")
@@ -195,6 +224,8 @@ class BackupAgent:
                 "Park() non confirme : on retombe sur l'attente de %.0f s",
                 self.grace_seconds,
             )
+
+        self.status = "waiting_park"
 
         deadline = time.monotonic() + self.grace_seconds
         logged = False
