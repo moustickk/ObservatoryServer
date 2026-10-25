@@ -8,61 +8,68 @@ les deux `run_server()`. Le code de sortie porte une information :
 
 Sans cette convention, le superviseur ne saurait pas distinguer un arret
 volontaire d'une demande de redemarrage.
+
+Journalisation
+--------------
+Chaque requete HTTP est journalisee : l'interface interroge `/api/health`
+toutes les deux secondes, ce qui produit plusieurs dizaines de milliers de
+lignes par jour. Le fichier doit donc tourner, sinon il atteint des gigabytes
+en quelques mois. `server.log` est limite a 5 Mo x 5 fichiers (25 Mo au total).
+
+Uvicorn n'a pas de configuration de journalisation propre (`log_config=None`) :
+ses messages remontent au logger racine, donc au meme fichier et au meme
+formateur. Un seul gestionnaire, donc une seule rotation coherente.
 """
 
 import logging
 import sys
-from copy import deepcopy
+from logging.handlers import RotatingFileHandler
 
 import uvicorn
-from uvicorn.config import LOGGING_CONFIG
 
 from backend.app import app
-from backend.common.constants import LOG_ACCESS_FORMAT, LOG_DATE_FORMAT, LOG_FORMAT
+from backend.common.constants import LOG_DATE_FORMAT, LOG_FORMAT
+from backend.common.paths import LOG_DIR, is_frozen
 from backend.common.restart import RESTART_EXIT_CODE, restart_requested
 from backend.common.settings_manager import get_int
 
 
-def _uvicorn_log_config():
-    """Journalisation d'uvicorn au meme format que le reste.
+LOG_MAX_BYTES = 5 * 1024 * 1024
 
-    Par defaut, uvicorn n'horodate pas ses lignes d'acces et n'affiche que
-    l'heure pour les autres : dans un fichier, c'est inexploitable.
-    """
+LOG_BACKUPS = 5
 
-    config = deepcopy(LOGGING_CONFIG)
 
-    config["formatters"]["default"]["fmt"] = LOG_FORMAT
-    config["formatters"]["default"]["datefmt"] = LOG_DATE_FORMAT
+def file_handler():
+    """Gestionnaire tournant de `server.log` (5 Mo x 5)."""
 
-    config["formatters"]["access"]["fmt"] = LOG_ACCESS_FORMAT
-    config["formatters"]["access"]["datefmt"] = LOG_DATE_FORMAT
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-    return config
+    handler = RotatingFileHandler(
+        LOG_DIR / "server.log",
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUPS,
+        encoding="utf-8",
+    )
+
+    handler.setFormatter(logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT))
+
+    return handler
 
 
 def _configure_logging():
-    """Journalisation adaptee au mode d'execution.
+    """Console en developpement, fichier tournant dans l'application."""
 
-    Dans l'application empaquetee, `sys.stderr` peut valoir None (pas de
-    console) : un StreamHandler leve alors une exception a chaque message.
-    """
-
-    handlers = []
-
-    if sys.stderr is not None:
-        handlers.append(logging.StreamHandler())
-    else:  # pragma: no cover - executable sans console
-        from backend.common.paths import LOG_DIR
-
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(LOG_DIR / "server.log", encoding="utf-8"))
+    if is_frozen():
+        handlers = [file_handler()]
+    else:
+        handlers = [logging.StreamHandler()]
 
     logging.basicConfig(
         level=logging.INFO,
         format=LOG_FORMAT,
         datefmt=LOG_DATE_FORMAT,
         handlers=handlers,
+        force=True,
     )
 
 
@@ -81,7 +88,7 @@ def run_server():
             app,
             host="0.0.0.0",
             port=port,
-            log_config=_uvicorn_log_config(),
+            log_config=None,
         )
     except KeyboardInterrupt:
         pass

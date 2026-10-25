@@ -524,6 +524,57 @@ async function restartServer() {
   }
 }
 
+// -- demarrage automatique -----------------------------------------------
+
+async function loadAutostart() {
+  const box = $("autostart");
+  const hint = $("autostart-hint");
+
+  const result = await api("/api/system/autostart");
+
+  if (!result.ok) {
+    box.disabled = true;
+    hint.textContent = "État indisponible.";
+    return;
+  }
+
+  box.checked = result.data.enabled === true;
+  hint.textContent = box.checked
+    ? "Raccourci présent dans le dossier Démarrage."
+    : "Aucun démarrage automatique.";
+}
+
+async function toggleAutostart() {
+  const box = $("autostart");
+  const hint = $("autostart-hint");
+  const wanted = box.checked;
+
+  box.disabled = true;
+  hide($("config-error"));
+
+  const result = await api(`/api/system/autostart?enabled=${wanted}`, {
+    method: "POST",
+  });
+
+  box.disabled = false;
+
+  if (!result.ok || !result.data) {
+    box.checked = !wanted;
+    show(
+      $("config-error"),
+      (result.data && result.data.message) || "Modification impossible.",
+    );
+    return;
+  }
+
+  box.checked = result.data.enabled === true;
+  hint.textContent = box.checked
+    ? "Raccourci présent dans le dossier Démarrage."
+    : "Aucun démarrage automatique.";
+}
+
+$("autostart").addEventListener("change", toggleAutostart);
+
 // -- atelier Arduino -----------------------------------------------------
 
 const ARDUINO_BOARDS = [
@@ -834,6 +885,7 @@ $("arduino-upload").addEventListener("click", () => startArduino("upload"));
 
 loadConfig();
 loadArduino();
+loadAutostart();
 refresh();
 setInterval(refresh, POLL_MS);
 

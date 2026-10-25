@@ -114,6 +114,15 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   un fichier de journal était inexploitable le lendemain. Le format est
   commun à `server.log`, `tray.log`, `roof.log` et `meteo_log.txt` ; la purge
   accepte encore l'ancien format ISO pour les lignes déjà écrites.
+- **Rotation de `server.log`.** Chaque requête HTTP y laisse une ligne, et
+  l'interface interroge `/api/health` toutes les 2 s : sans rotation, le
+  fichier atteignait ~10 Mo par jour. Il tourne maintenant à 5 Mo × 5. Uvicorn
+  n'a plus de journalisation propre : ses messages remontent au gestionnaire
+  unique, donc une seule rotation cohérente. La sortie brute du processus va
+  dans `console.log`.
+- **Démarrage automatique pilotable depuis l'interface.** Case à cocher qui
+  crée ou supprime le raccourci du dossier Démarrage (COM exécuté hors du
+  thread des requêtes).
 - **Documentation embarquée et consultable depuis l'interface.** Le guide,
   la recette et la documentation du firmware sont livrés dans l'exe et rendus
   en HTML (`markdown`), pour rester lisibles sur le poste d'observatoire sans
@@ -175,6 +184,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/server/restart (POST, relance apres configuration)
 - http://localhost:11111/api/arduino/status (outillage, noyaux, ports)
 - http://localhost:11111/api/arduino/job (avancement du dernier travail)
+- http://localhost:11111/api/system/autostart (état et bascule)
 - http://localhost:11111/api/docs (guide, recette, firmware en HTML)
 - http://localhost:11111/ui/#docs (ouvre directement la documentation)
 - http://localhost:11111/api/logs (liste et fin des journaux)
@@ -258,6 +268,7 @@ backend/
   common/
     logs_api.py          lecture des journaux (fin de fichier, noms autorisés)
   common/
+    autostart.py         raccourci de démarrage (activation depuis l'interface)
     docs_api.py          documentation embarquée, rendue en HTML
   web/
     index.html           interface locale (état, météo, commandes, config, journaux, doc)

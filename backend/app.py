@@ -15,6 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from backend import container
 from backend.arduino.workshop import WorkshopError
 from backend.common import settings_manager
+from backend.common.autostart import is_enabled as autostart_enabled
+from backend.common.autostart import set_enabled_threaded, shortcut_path
 from backend.common.restart import schedule_restart
 from backend.mount.drivers import list_drivers
 from backend.common.alpaca.server import router as alpaca_router
@@ -242,6 +244,33 @@ def logs_tail(name: str, lines: int = 200):
         "size": size,
         "truncated": truncated,
     }
+
+
+# -- systeme -------------------------------------------------------------
+
+@app.get("/api/system/autostart")
+def autostart_status():
+    return {
+        "enabled": autostart_enabled(),
+        "path": str(shortcut_path()),
+    }
+
+
+@app.post("/api/system/autostart")
+def autostart_set(enabled: bool):
+
+    try:
+        state = set_enabled_threaded(enabled)
+    except Exception as ex:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "enabled": autostart_enabled(),
+                "message": f"Modification impossible : {ex}",
+            },
+        )
+
+    return {"enabled": state}
 
 
 # -- documentation -------------------------------------------------------

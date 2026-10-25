@@ -318,6 +318,22 @@ dialog::backdrop { background: rgba(0, 0, 0, .65); }
 }
 #arduino-toolchain { margin: 0 0 12px; }
 
+/* -- reglages systeme -------------------------------------------------- */
+
+.system-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.system-row .follow { font-size: 13px; color: var(--text); }
+.system-row .hint { margin: 0; }
+
 /* -- documentation ----------------------------------------------------- */
 
 #docs-content {

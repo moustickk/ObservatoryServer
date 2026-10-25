@@ -107,6 +107,10 @@ redémarrage** : utiliser le bouton Redémarrer après Enregistrer.
 Les identifiants Alpaca (`dome_unique_id`, `safety_unique_id`) sont en lecture
 seule : les changer créerait un appareil en double dans NINA.
 
+La case **« Démarrer à l'ouverture de Windows »**, en haut de la
+configuration, agit immédiatement : elle crée ou supprime le raccourci du
+dossier Démarrage, sans redémarrage.
+
 ---
 
 ## Connexion dans NINA
@@ -211,8 +215,10 @@ repartir de zéro.
   state\roof_state.json    dernier état connu du toit
 ```
 
-Les journaux sont datés (`jj-mm-aaaa hh:mm:ss`), conservés 48 heures et
-consultables depuis le bouton **Journaux**.
+Les journaux sont datés (`jj-mm-aaaa hh:mm:ss`) et consultables depuis le
+bouton **Journaux**. `roof.log` et `meteo_log.txt` sont purgés après 48 h ;
+`server.log` tourne automatiquement (5 Mo × 5 fichiers, soit 25 Mo au
+maximum), car chaque requête HTTP y laisse une ligne.
 
 ---
 

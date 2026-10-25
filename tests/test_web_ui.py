@@ -113,3 +113,12 @@ def test_l_atelier_arduino_est_branche():
     # Les actions sont construites dans une chaine : on verifie les appels.
     assert 'startArduino("compile")' in js
     assert 'startArduino("upload")' in js
+
+
+def test_le_demarrage_automatique_est_branche():
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    routes = {getattr(route, "path", None) for route in app.routes}
+
+    assert "/api/system/autostart" in routes
+    assert "/api/system/autostart" in js
+    assert "toggleAutostart" in js

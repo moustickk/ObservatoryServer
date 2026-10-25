@@ -112,7 +112,12 @@ class Supervisor:
     def start(self):
 
         LOG_DIR.mkdir(parents=True, exist_ok=True)
-        log_path = LOG_DIR / "server.log"
+
+        # Le serveur ecrit lui-meme son `server.log` (avec rotation). Ici on
+        # ne garde que ce qui echappe a la journalisation : trace d'un plantage
+        # au demarrage, message du bootloader Python. Fichier distinct pour ne
+        # pas interferer avec la rotation.
+        log_path = LOG_DIR / "console.log"
 
         environment = os.environ.copy()
         environment[SUPERVISOR_ENV] = "1"
