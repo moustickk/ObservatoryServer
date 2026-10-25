@@ -114,6 +114,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   un fichier de journal était inexploitable le lendemain. Le format est
   commun à `server.log`, `tray.log`, `roof.log` et `meteo_log.txt` ; la purge
   accepte encore l'ancien format ISO pour les lignes déjà écrites.
+- **Une couleur par section dans l'interface.** Bordure et pastille d'accent
+  (Toit bleu, Sécurité météo vert, Atelier Arduino cyan, Configuration
+  violet) ; la carte météo passe au rouge quand le verdict est UNSAFE, et les
+  groupes de réglages portent la couleur de leur domaine.
 - **Fichiers de l'interface servis en `no-cache`.** Sans cet en-tête, une
   mise à jour de l'exe laissait le navigateur réutiliser un `app.js` ancien :
   le bouton apparaissait mais restait inactif. Le cache est désormais

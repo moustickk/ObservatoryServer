@@ -26,7 +26,7 @@
 
   <main>
 
-    <section class="card" id="dome-card">
+    <section class="card dome" id="dome-card">
       <div class="card-head">
         <h2>Toit</h2>
         <span id="state" class="badge">…</span>
@@ -52,9 +52,9 @@
       <p id="action-error" class="error hidden"></p>
     </section>
 
-    <section class="card" id="weather-card">
+    <section class="card weather" id="weather-card">
       <div class="card-head">
-        <h2>Météo</h2>
+        <h2>Sécurité météo</h2>
         <span id="safe" class="badge">…</span>
       </div>
 
@@ -71,13 +71,10 @@
         <div><dt>Dernière</dt><dd id="w-last">—</dd></div>
       </dl>
 
-      <p class="hint">
-        L'agent de sauvegarde ferme le toit quand la météo est UNSAFE.
-        Son état est indiqué par le badge ci-dessus.
-      </p>
+      <p class="hint" id="agent-state">Agent de sauvegarde : —</p>
     </section>
 
-    <section class="card wide" id="arduino-card">
+    <section class="card wide arduino" id="arduino-card">
       <div class="card-head">
         <h2>Atelier Arduino</h2>
         <span id="arduino-state" class="tag">…</span>
@@ -101,7 +98,7 @@
       <pre id="arduino-output" class="console">—</pre>
     </section>
 
-    <section class="card wide" id="config-card">
+    <section class="card wide config" id="config-card">
       <div class="card-head">
         <h2>Configuration</h2>
         <div class="config-actions">

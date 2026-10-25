@@ -38,6 +38,16 @@ const GROUP_LABELS = {
   toit: "Toit",
   monture: "Monture",
   meteo: "Météo",
+  arduino: "Arduino",
+};
+
+// Une couleur par groupe de réglages, pour retrouver la section d'un coup.
+const GROUP_COLORS = {
+  general: "#8b9bab",
+  toit: "#388bfd",
+  monture: "#a371f7",
+  meteo: "#3fb950",
+  arduino: "#39c5cf",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -126,6 +136,11 @@ function renderDome(dome, agentEnabled) {
   } else if (notice.textContent.startsWith("Agent")) {
     hide(notice);
   }
+
+  $("agent-state").textContent =
+    agentEnabled === false
+      ? "Agent de sauvegarde désactivé : aucune fermeture automatique."
+      : "Agent de sauvegarde actif : ferme le toit si la météo devient UNSAFE.";
 }
 
 function renderHeader(health) {
@@ -150,6 +165,9 @@ function renderWeather(status) {
   const badge = $("safe");
   badge.textContent = safe ? "SAFE" : "UNSAFE";
   badge.className = `badge ${safe ? "safe" : "unsafe"}`;
+
+  // La carte entière change de couleur : l'alerte se voit sans lire.
+  $("weather-card").classList.toggle("unsafe", !safe);
 
   $("weather-status").textContent = status.status || "—";
 
@@ -324,6 +342,7 @@ function renderConfig(data) {
 
   for (const group of ordered) {
     const fieldset = document.createElement("fieldset");
+    fieldset.style.setProperty("--group-color", GROUP_COLORS[group] || "#8b9bab");
 
     const legend = document.createElement("legend");
     legend.textContent = GROUP_LABELS[group] || group;
