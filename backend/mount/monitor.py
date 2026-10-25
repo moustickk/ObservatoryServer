@@ -167,6 +167,17 @@ class MountMonitor:
 
         return request.ok
 
+    def abort(self, timeout=5.0):
+        """Arrete immediatement un mouvement de monture (AbortSlew)."""
+
+        if self._thread is None or not self._thread.is_alive():
+            return False
+
+        request = _Request("abort", timeout)
+        self._requests.put(request)
+
+        return request.done.wait(float(timeout) + 2.0) and request.ok
+
     # -- interne ---------------------------------------------------------
 
     def _publish(self, value, error=None):
@@ -209,6 +220,16 @@ class MountMonitor:
         finally:
             request.done.set()
 
+    def _handle_abort(self, request):
+        try:
+            abort = getattr(self.link, "abort", None)
+            request.ok = bool(abort()) if callable(abort) else True
+        except Exception as ex:
+            request.error = str(ex)
+            request.ok = False
+        finally:
+            request.done.set()
+
     def _loop(self):
         if pythoncom is not None:
             pythoncom.CoInitialize()
@@ -223,6 +244,8 @@ class MountMonitor:
                 if request is not None:
                     if request.kind == "park":
                         self._handle_park(request)
+                    elif request.kind == "abort":
+                        self._handle_abort(request)
                     else:
                         self._handle_reconnect(request)
                     continue

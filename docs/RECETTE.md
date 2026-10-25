@@ -94,6 +94,19 @@ Durée indicative : 1 h 30, dont 30 min de mouvements réels.
 
 ---
 
+## E bis. Protection monture
+
+- [ ] Parquer la monture, fermer le toit.
+- [ ] **Déparquer** la monture (EQMOD ou NINA).
+- [ ] **Attendu** : dans la seconde, alarme
+      `MOUNT_UNPARKED_ROOF_CLOSED`, monture arrêtée puis parquée
+      automatiquement.
+- [ ] Rouvrir le toit, parquer, puis fermer ; relancer une fermeture et
+      **déparquer pendant** la fermeture.
+- [ ] **Attendu** : `MOUNT_UNPARKED_DURING_CLOSE`, toit arrêté.
+- [ ] Désactiver `guard_mount` pour vérifier qu'on retrouve l'ancien
+      comportement (aucune réaction).
+
 ## F. Sécurité météo et agent de sauvegarde
 
 - [ ] Vérifier le verdict dans la carte **Sécurité météo** (SAFE/UNSAFE) et

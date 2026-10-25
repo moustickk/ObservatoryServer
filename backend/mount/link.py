@@ -190,6 +190,21 @@ class AscomMountLink(MountLink):
             self._at_park_at = now
             return value
 
+    def abort(self):
+        """Arrete un mouvement en cours (AbortSlew), sans deplacer la monture."""
+
+        if not ASCOM_AVAILABLE:
+            return False
+
+        with self._lock:
+            try:
+                self._get_scope().AbortSlew()
+                return True
+            except Exception as ex:
+                self._last_error = str(ex)
+                mount_log(f"Arret de la monture impossible : {ex}")
+                return False
+
     def reconnect(self, timeout=15.0):
         """Ferme puis rouvre la liaison au driver, en attendant qu'elle vive.
 

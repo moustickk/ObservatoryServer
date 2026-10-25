@@ -22,6 +22,12 @@ Ces règles sont volontairement strictes. Elles coûtent parfois une nuit, elles
 | **Pas d'inversion de sens** | `OPEN` pendant `CLOSING` est refusé (`ER:BUSY`). Il faut arrêter, puis relancer. |
 | **Fermeture automatique** | Météo UNSAFE ⇒ l'agent ferme le toit, en laissant à la monture jusqu'à 180 s pour se parquer. |
 
+**Protection monture.** Le serveur ne peut pas empêcher NINA ou EQMOD de
+déparquer la monture. Il surveille donc l'état : si le toit est fermé et la
+monture déparquée, il arrête la monture puis la parque dans la seconde, et
+lève une alarme. Si la fermeture est en cours, il arrête le toit avant
+d'écraser la monture. Réglage : `guard_mount` (actif par défaut).
+
 **Ce que le système ne fait pas** : il n'y a ni détection d'obstacle, ni
 encodeur, ni station météo physique. Une météo prévue sèche peut être fausse ;
 un toit poussé à la main hors tension n'est pas détecté.
@@ -183,6 +189,7 @@ réponde avant de conclure.
 | `max_travel_time` | **doit rester égal** à `ROOF_MAX_TRAVEL_MS` du firmware |
 | `safety_agent_enabled` | fermeture automatique sur météo UNSAFE |
 | `auto_park_mount` | l'agent peut parquer la monture lui-même (installation non surveillée) |
+| `guard_mount` | toit fermé + monture déparquée : arrêt de la monture et parkage immédiat ; arrêt du toit s'il ferme |
 | `park_grace_seconds` | temps laissé à la monture pour se parquer |
 | `close_anyway` | fermer malgré une monture non parquée — dangereux, laisser faux |
 | `ui_local_only` | interface et commandes réservées à la machine locale |

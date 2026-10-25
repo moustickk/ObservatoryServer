@@ -23,6 +23,11 @@ def monitor_loop(dome, stop_event):
         except Exception:
             log.exception("Erreur pendant la surveillance du toit")
 
+        try:
+            dome.guard()
+        except Exception:
+            log.exception("Erreur pendant la protection de la monture")
+
         stop_event.wait(POLL_SECONDS)
 
     log.info("Surveillance du toit arretee")

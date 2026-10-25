@@ -120,6 +120,11 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   n'a plus de journalisation propre : ses messages remontent au gestionnaire
   unique, donc une seule rotation cohérente. La sortie brute du processus va
   dans `console.log`.
+- **Protection monture (`guard_mount`).** Le serveur ne peut pas empêcher un
+  déparkage, mais il le détecte en une seconde : toit fermé + monture
+  déparquée ⇒ `AbortSlew()` puis parkage automatique et alarme ; toit en
+  fermeture + monture déparquée ⇒ arrêt du toit avant écrasement. Boucle de
+  surveillance à 1 s, réaction limitée à une tentative toutes les 10 s.
 - **Reconnexion de la monture.** Bouton *Reconnecter* : ferme la session
   ASCOM (`Connected = False`), en ouvre une neuve (`DispatchEx`) et attend.
   Si le driver reste bloqué — EQMOD accepte `Connected = True` sans jamais se

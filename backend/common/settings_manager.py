@@ -49,6 +49,8 @@ DEFAULT_SETTINGS = {
     "close_anyway": False,
     "mount_check_mode": "strict",
     "simulation_mount_parked": True,
+    # Protege la monture : toit ferme + monture deparquee = collision.
+    "guard_mount": True,
     # L'interface web et l'API de commande ne repondent qu'aux clients de la
     # machine locale. Alpaca (/api/v1/...) reste joignable depuis le reseau,
     # pour NINA. A desactiver si l'on veut piloter depuis une tablette.
@@ -120,6 +122,7 @@ SETTING_INFO = {
     "auto_park_mount": ("monture", "L'agent de sauvegarde peut parquer lui-meme la monture. Jamais sur une commande interactive."),
     "close_anyway": ("monture", "Fermer le toit meme si la monture n'est pas parquee. Dangereux, desactive par defaut."),
     "mount_check_mode": ("monture", "strict : refus si la monture n'est pas parquee. disabled : aucune verification."),
+    "guard_mount": ("monture", "Parquer la monture si elle est deparquee alors que le toit est ferme, et arreter la fermeture si elle se deparquille en cours."),
     "simulation_mount_parked": ("monture", "Etat de parkage de la monture simulee (mode simulation)."),
     # meteo
     "max_wind_speed": ("meteo", "Vent moyen maximal, en km/h."),

@@ -8,6 +8,7 @@ alarme explicite, exposee par l'API et, plus tard, par Alpaca.
 
 import logging
 import threading
+import time
 
 from backend.dome.logging import log_close, log_open, log_stop
 from backend.dome.serial_link import CommandRejected, LinkError
@@ -33,6 +34,10 @@ REJECTION_MESSAGES = {
 }
 
 
+# Intervalle minimal entre deux reactions de la protection monture.
+GUARD_INTERVAL = 10.0
+
+
 class DomeService:
 
     def __init__(self, roof_link, mount_link, settings):
@@ -43,6 +48,8 @@ class DomeService:
         self.mount_check_mode = settings.get("mount_check_mode", "strict")
         self.close_anyway = bool(settings.get("close_anyway", False))
         self.park_timeout = float(settings.get("park_timeout", 300))
+        self.guard_mount = bool(settings.get("guard_mount", True))
+        self._guard_at = 0.0
         self._lock = threading.RLock()
         self._parking = False
 
@@ -132,6 +139,58 @@ class DomeService:
         self.state.raise_alarm(code, message)
         log.critical("Toit %s refuse : %s", action, message)
         return self._result(False, code, message)
+
+    # -- protection de la monture ---------------------------------------
+
+    def guard(self):
+        """Toit ferme + monture deparquee = collision.
+
+        On ne peut pas empecher NINA ou EQMOD de deparquer : on reagit. La
+        monture est arretee puis parquee ; si la fermeture est en cours, le
+        toit est arrete avant d'ecraser la monture.
+        """
+
+        if not self.guard_mount or self.maintenance:
+            return None
+
+        if self.mount_check_mode == "disabled":
+            return None
+
+        roof_state = self.state.get("state")
+
+        if roof_state not in ("CLOSED", "CLOSING"):
+            return None
+
+        if self.mount.at_park() is not False:
+            return None
+
+        now = time.monotonic()
+
+        if now - self._guard_at < GUARD_INTERVAL:
+            return None
+
+        self._guard_at = now
+
+        if roof_state == "CLOSING":
+            message = (
+                "Monture deparquee pendant la fermeture : toit arrete "
+                "(risque de collision)"
+            )
+            self.state.raise_alarm("MOUNT_UNPARKED_DURING_CLOSE", message)
+            log.critical(message)
+            self.mount.abort()
+            self.stop()
+            return "stopped"
+
+        message = (
+            "Monture deparquee alors que le toit est ferme : "
+            "risque de collision, parkage automatique"
+        )
+        self.state.raise_alarm("MOUNT_UNPARKED_ROOF_CLOSED", message)
+        log.critical(message)
+        self.mount.abort()
+        self.park_mount()
+        return "parking"
 
     # -- commandes -------------------------------------------------------
 

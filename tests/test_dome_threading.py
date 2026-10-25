@@ -83,6 +83,7 @@ class StubMountLink:
         self.park_calls = 0
         self.park_result = True
         self.reconnects = 0
+        self.aborts = 0
 
     def at_park(self):
         self.calls += 1
@@ -98,6 +99,10 @@ class StubMountLink:
 
     def reconnect(self):
         self.reconnects += 1
+        return True
+
+    def abort(self):
+        self.aborts += 1
         return True
 
 
@@ -553,3 +558,73 @@ def test_reconnect_mount_signale_le_succes(monkeypatch, tmp_path):
 
     assert result["ok"] is True
     assert mount.reconnects == 1
+
+
+# -- protection monture (toit ferme + monture deparquee) -----------------
+
+
+def build_guard_dome(monkeypatch, tmp_path, state="CLOSED", parked=False, guard=True):
+    import sys as _sys
+
+    monkeypatch.setattr(
+        "backend.common.state.STATE_FILE",
+        tmp_path / "roof_state.json",
+    )
+
+    from backend.dome.service import DomeService
+
+    mount = StubMountLink(parked=parked)
+    dome = DomeService(
+        SilentRoof(),
+        mount,
+        {"full_travel_time": 48, "guard_mount": guard},
+    )
+    dome.state.set_state(state)
+
+    return dome, mount
+
+
+def test_guard_parque_la_monture_quand_le_toit_est_ferme(monkeypatch, tmp_path):
+    dome, mount = build_guard_dome(monkeypatch, tmp_path, state="CLOSED", parked=False)
+
+    assert dome.guard() == "parking"
+    assert mount.aborts == 1
+
+    deadline = time.monotonic() + 2.0
+    while mount.park_calls == 0 and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    assert mount.park_calls == 1
+    assert dome.state.alarm["code"] == "MOUNT_UNPARKED_ROOF_CLOSED"
+
+
+def test_guard_arrete_le_toit_pendant_la_fermeture(monkeypatch, tmp_path):
+    dome, mount = build_guard_dome(monkeypatch, tmp_path, state="CLOSING", parked=False)
+
+    assert dome.guard() == "stopped"
+    assert mount.aborts == 1
+    assert dome.state.alarm["code"] == "MOUNT_UNPARKED_DURING_CLOSE"
+
+
+def test_guard_ne_fait_rien_si_la_monture_est_parquee(monkeypatch, tmp_path):
+    dome, mount = build_guard_dome(monkeypatch, tmp_path, state="CLOSED", parked=True)
+
+    assert dome.guard() is None
+    assert mount.aborts == 0
+
+
+def test_guard_ne_fait_rien_sil_est_desactive(monkeypatch, tmp_path):
+    dome, mount = build_guard_dome(
+        monkeypatch, tmp_path, state="CLOSED", parked=False, guard=False
+    )
+
+    assert dome.guard() is None
+    assert mount.aborts == 0
+
+
+def test_guard_ignore_la_maintenance(monkeypatch, tmp_path):
+    dome, mount = build_guard_dome(monkeypatch, tmp_path, state="CLOSED", parked=False)
+    dome.maintenance = True
+
+    assert dome.guard() is None
+    assert mount.aborts == 0
