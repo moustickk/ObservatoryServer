@@ -122,3 +122,12 @@ def test_le_demarrage_automatique_est_branche():
     assert "/api/system/autostart" in routes
     assert "/api/system/autostart" in js
     assert "toggleAutostart" in js
+
+
+def test_licone_de_notification_est_branchee():
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    routes = {getattr(route, "path", None) for route in app.routes}
+
+    assert "/api/system/tray-icon" in routes
+    assert "/api/system/tray-icon" in js
+    assert "toggleTrayIcon" in js

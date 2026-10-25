@@ -48,6 +48,48 @@ def test_la_cible_est_lanceur_en_developpement(monkeypatch):
     assert "launcher.py" in arguments
 
 
+# -- icone dans la zone de notification ---------------------------------
+
+
+def test_le_chemin_avec_guid_est_developpe():
+    from backend.common import tray_icon
+
+    stored = r"{6D809377-6AF0-444B-8957-A3773F02200E}\ObservatoryServer\ObservatoryServer.exe"
+
+    expanded = tray_icon.expand_path(stored)
+
+    assert expanded is not None
+    assert expanded.lower().endswith(
+        r"observatoryserver\observatoryserver.exe".lower()
+    )
+    assert not expanded.startswith("{")
+
+
+def test_la_comparaison_ignore_la_casse(tmp_path):
+    from backend.common import tray_icon
+
+    executable = tmp_path / "ObservatoryServer.exe"
+    executable.write_text("", encoding="utf-8")
+
+    assert tray_icon.matches(str(executable).upper(), str(executable)) is True
+
+    other = tmp_path / "Autre.exe"
+    other.write_text("", encoding="utf-8")
+
+    assert tray_icon.matches(str(other), str(executable)) is False
+
+
+def test_le_statut_est_indisponible_hors_application(monkeypatch):
+    from backend.common import tray_icon
+
+    monkeypatch.delattr(sys, "frozen", raising=False)
+
+    status = tray_icon.status()
+
+    assert status["supported"] is False
+    assert status["promoted"] is False
+
+
 # -- rotation du journal serveur ----------------------------------------
 
 

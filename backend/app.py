@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from backend import container
 from backend.arduino.workshop import WorkshopError
 from backend.common import settings_manager
+from backend.common import tray_icon
 from backend.common.autostart import is_enabled as autostart_enabled
 from backend.common.autostart import set_enabled_threaded, shortcut_path
 from backend.common.restart import schedule_restart
@@ -271,6 +272,16 @@ def autostart_set(enabled: bool):
         )
 
     return {"enabled": state}
+
+
+@app.get("/api/system/tray-icon")
+def tray_icon_status():
+    return tray_icon.status()
+
+
+@app.post("/api/system/tray-icon")
+def tray_icon_set(promoted: bool):
+    return tray_icon.set_promoted(promoted)
 
 
 # -- documentation -------------------------------------------------------

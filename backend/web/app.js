@@ -575,6 +575,64 @@ async function toggleAutostart() {
 
 $("autostart").addEventListener("change", toggleAutostart);
 
+// -- icone de la zone de notification ------------------------------------
+
+async function loadTrayIcon() {
+  const box = $("tray-promote");
+  const hint = $("tray-hint");
+
+  const result = await api("/api/system/tray-icon");
+
+  if (!result.ok) {
+    box.disabled = true;
+    hint.textContent = "État indisponible.";
+    return;
+  }
+
+  const data = result.data;
+
+  box.checked = data.promoted === true;
+  box.disabled = !data.supported || !data.known;
+
+  if (!data.supported) {
+    hint.textContent = data.reason || "Non disponible.";
+  } else if (!data.known) {
+    hint.textContent =
+      data.reason || "Windows n'a pas encore enregistré l'icône.";
+  } else if (data.promoted) {
+    hint.textContent = "Icône affichée dans la barre.";
+  } else {
+    hint.textContent = "Icône repliée dans le menu chevron de Windows.";
+  }
+}
+
+async function toggleTrayIcon() {
+  const box = $("tray-promote");
+  const hint = $("tray-hint");
+  const wanted = box.checked;
+
+  box.disabled = true;
+
+  const result = await api(`/api/system/tray-icon?promoted=${wanted}`, {
+    method: "POST",
+  });
+
+  box.disabled = false;
+
+  if (!result.ok || !result.data) {
+    box.checked = !wanted;
+    show($("config-error"), "Modification de l'icône impossible.");
+    return;
+  }
+
+  box.checked = result.data.promoted === true;
+  hint.textContent = box.checked
+    ? "Icône affichée. Une reconnexion Windows peut être nécessaire."
+    : "Icône repliée. Une reconnexion Windows peut être nécessaire.";
+}
+
+$("tray-promote").addEventListener("change", toggleTrayIcon);
+
 // -- atelier Arduino -----------------------------------------------------
 
 const ARDUINO_BOARDS = [
@@ -886,6 +944,7 @@ $("arduino-upload").addEventListener("click", () => startArduino("upload"));
 loadConfig();
 loadArduino();
 loadAutostart();
+loadTrayIcon();
 refresh();
 setInterval(refresh, POLL_MS);
 

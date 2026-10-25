@@ -120,6 +120,12 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   n'a plus de journalisation propre : ses messages remontent au gestionnaire
   unique, donc une seule rotation cohérente. La sortie brute du processus va
   dans `console.log`.
+- **Visibilité de l'icône pilotable.** Windows cache les nouvelles icônes
+  dans le chevron ; le choix est stocké par icône dans
+  `HKCU\Control Panel\NotifyIconSettings` (`IsPromoted`). L'interface lit
+  cet état et peut le modifier. L'entrée n'existe qu'après le premier
+  affichage de l'icône, et Windows peut n'appliquer le changement qu'à la
+  prochaine session.
 - **Démarrage automatique pilotable depuis l'interface.** Case à cocher qui
   crée ou supprime le raccourci du dossier Démarrage (COM exécuté hors du
   thread des requêtes).
@@ -185,6 +191,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/arduino/status (outillage, noyaux, ports)
 - http://localhost:11111/api/arduino/job (avancement du dernier travail)
 - http://localhost:11111/api/system/autostart (état et bascule)
+- http://localhost:11111/api/system/tray-icon (visibilité de l'icône)
 - http://localhost:11111/api/docs (guide, recette, firmware en HTML)
 - http://localhost:11111/ui/#docs (ouvre directement la documentation)
 - http://localhost:11111/api/logs (liste et fin des journaux)
@@ -269,6 +276,7 @@ backend/
     logs_api.py          lecture des journaux (fin de fichier, noms autorisés)
   common/
     autostart.py         raccourci de démarrage (activation depuis l'interface)
+    tray_icon.py         visibilité de l'icône (registre NotifyIconSettings)
     docs_api.py          documentation embarquée, rendue en HTML
   web/
     index.html           interface locale (état, météo, commandes, config, journaux, doc)

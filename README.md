@@ -107,9 +107,14 @@ redémarrage** : utiliser le bouton Redémarrer après Enregistrer.
 Les identifiants Alpaca (`dome_unique_id`, `safety_unique_id`) sont en lecture
 seule : les changer créerait un appareil en double dans NINA.
 
-La case **« Démarrer à l'ouverture de Windows »**, en haut de la
-configuration, agit immédiatement : elle crée ou supprime le raccourci du
-dossier Démarrage, sans redémarrage.
+Deux cases en haut de la configuration agissent immédiatement, sans
+redémarrage :
+
+- **« Démarrer à l'ouverture de Windows »** crée ou supprime le raccourci du
+  dossier Démarrage ;
+- **« Afficher l'icône près de l'horloge »** demande à Windows de sortir
+  l'icône du menu chevron. Le réglage est propre à chaque icône, et Windows ne
+  l'applique parfois qu'à la prochaine ouverture de session.
 
 ---
 
