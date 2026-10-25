@@ -41,7 +41,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 8 | terminée | interface web locale (état, météo, commandes, configuration, scan des pilotes ASCOM) |
 | 9 | terminée | tray app, PyInstaller onedir, installateur Inno Setup, démarrage auto |
 | 10 | terminée | atelier Arduino : configuration générée, compilation, téléversement |
-| 11 | à faire | recette et documentation utilisateur |
+| 11 | terminée | recette et documentation utilisateur |
 
 ## Commits
 
@@ -260,6 +260,10 @@ firmware/
   RoofController.ino     firmware du toit (protocole OK:/ER:/EVT:)
   roof_config.h          brochage, temporisations, vitesses
   README.md              câblage, protocole, essai au banc, réglages
+docs/
+  README.md              index de la documentation
+  RECETTE.md             protocole de mise en service (cases à cocher)
+README.md                guide utilisateur
 packaging/
   ObservatoryServer.spec recette PyInstaller
   build.ps1 / build.cmd  construction
@@ -350,7 +354,11 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 11** : recette et documentation utilisateur.
+1. **Dérouler `docs/RECETTE.md` sur le site**, matériel branché, avant de
+   laisser l'observatoire sans surveillance. C'est la seule étape qui reste
+   avant une mise en service réelle.
+2. Optionnel, si le besoin apparaît : séparer `simulation_dome` et
+   `simulation_mount`, ajouter un encodeur ou une station météo physique.
 2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
    `simulation_mount` séparés et un moyen de neutraliser l'agent de
    sauvegarde pendant l'essai.
