@@ -39,7 +39,7 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 | 6 | terminée | journalisation : ajout O(1), verrou par fichier, purge horaire |
 | 7 | terminée | chemins compatibles installation (`%ProgramData%`) + schéma de configuration |
 | 8 | terminée | interface web locale (état, météo, commandes, configuration, scan des pilotes ASCOM) |
-| 9 | en cours | tray app et PyInstaller faits ; installateur Inno Setup à faire |
+| 9 | terminée | tray app, PyInstaller onedir, installateur Inno Setup, démarrage auto |
 | 10 | à faire | atelier Arduino via `arduino-cli` |
 | 11 | à faire | recette et documentation utilisateur |
 
@@ -171,6 +171,19 @@ Vérifié en vrai : exécutable lancé sur un dossier de données temporaire
 (port 11112, simulation), interface servie, journaux écrits, et redémarrage
 supervisé (code 75) relançant un processus neuf en 2 s.
 
+Installateur (`packaging\ObservatoryServer.iss`) :
+
+- programme dans `Program Files`, données dans `%ProgramData%\ObservatoryServer`
+  (créé avec des droits d'écriture pour les utilisateurs) ;
+- raccourcis menu Démarrer et Bureau, démarrage automatique facultatif,
+  règle de pare-feu facultative sur le port 11111 ;
+- la désinstallation conserve les données (configuration, journaux, état).
+
+Vérifié : installation silencieuse dans un dossier temporaire, application
+lancée (port 11113, interface et journaux OK), désinstallation propre, données
+conservées. L'installation réelle en `Program Files` n'a pas été exécutée ici :
+elle demande une élévation UAC, laissée à l'opérateur.
+
 Un fichier de configuration enregistré avec un BOM UTF-8 (Notepad) était
 déclaré illisible et remplacé par les valeurs par défaut, donc en simulation.
 La lecture tolère désormais le BOM (`utf-8-sig`), pour la configuration comme
@@ -261,6 +274,9 @@ tests/
 - Agent : réouverture sous UNSAFE refermée **sans délai** (le repos de 120 s
   ne s'applique plus qu'après un échec, sinon le toit restait ouvert deux
   minutes).
+- **Installateur Inno Setup** vérifié : installation silencieuse, lancement
+  de l'app installée (interface + journaux), désinstallation, conservation
+  des données. 21,7 Mo, compilation sans avertissement.
 - **Essai réel du 24/10**, `simulation: false` : toit sur COM4, monture
   EQMOD_SIM (`AtPark = True`). Ouverture puis fermeture commandées depuis
   NINA (18:54:13 puis 18:55:37), retour en `CLOSED`, position 0, aucune
@@ -294,9 +310,8 @@ Scripts : `%TEMP%\opencode\smoke_phase1.py`, `smoke_phase2.py`,
 
 ## Prochaines étapes immédiates
 
-1. **Phase 9** : tray app, PyInstaller, installateur Inno Setup, démarrage
-   automatique. L'interface web devra être embarquée dans le bundle
-   (`backend/web`).
+1. **Phase 10** : atelier Arduino via `arduino-cli` (génération de
+   `roof_config.h`, compilation, téléversement).
 2. Essai réel du toit depuis NINA : il demande `simulation_dome` /
    `simulation_mount` séparés et un moyen de neutraliser l'agent de
    sauvegarde pendant l'essai.
