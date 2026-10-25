@@ -121,6 +121,12 @@ function renderDome(dome, agentEnabled) {
     mountText += " (mesure périmée)";
   }
 
+  const mountIssue = mount.error || mount.link_error;
+
+  if (mountIssue) {
+    mountText += ` — ${mountIssue}`;
+  }
+
   $("mount").textContent = mountText;
 
   const alarm = dome.alarm;
@@ -999,6 +1005,28 @@ $("btn-stop").addEventListener("click", () => command("/api/dome/stop", "Arrête
 $("btn-park").addEventListener("click", () =>
   command("/api/mount/park", "Parquer la monture"),
 );
+
+$("btn-reconnect").addEventListener("click", async () => {
+  if (
+    !confirm(
+      "Reconnecter la monture ?\n\n" +
+        "Si le driver ne répond pas, son processus sera redémarré.",
+    )
+  ) {
+    return;
+  }
+
+  hide($("action-error"));
+
+  const result = await api("/api/mount/reconnect", { method: "POST" });
+
+  if (!result.ok) {
+    const data = result.data || {};
+    show($("action-error"), data.message || "Reconnexion impossible.");
+  }
+
+  refresh();
+});
 
 $("btn-save").addEventListener("click", saveConfig);
 $("btn-reload").addEventListener("click", loadConfig);

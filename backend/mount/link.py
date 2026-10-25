@@ -13,6 +13,7 @@ import logging
 import threading
 import time
 
+from backend.mount import driver
 from backend.mount.logging import mount_log
 
 
@@ -102,15 +103,25 @@ class AscomMountLink(MountLink):
 
     # -- interne ---------------------------------------------------------
 
-    def _connect_scope(self):
-        """Reutilise l'instance de NINA si elle existe, sinon en cree une."""
+    def _connect_scope(self, fresh=False):
+        """Ouvre le driver. `fresh=True` force une nouvelle session.
 
-        try:
-            scope = win32com.client.GetActiveObject(self.driver)
-            mount_log(f"Driver={self.driver} (instance existante)")
-        except Exception:
-            scope = win32com.client.Dispatch(self.driver)
-            mount_log(f"Driver={self.driver} (nouvelle instance)")
+        `GetActiveObject` reutilise l'instance existante — celle de NINA par
+        exemple — mais apres une perte de materiel, cette instance peut rester
+        bloquee. `DispatchEx` cree une session neuve, ce qui est la seule
+        facon de repartir sans redemarrer le serveur.
+        """
+
+        if fresh:
+            scope = win32com.client.DispatchEx(self.driver)
+            mount_log(f"Driver={self.driver} (nouvelle session)")
+        else:
+            try:
+                scope = win32com.client.GetActiveObject(self.driver)
+                mount_log(f"Driver={self.driver} (instance existante)")
+            except Exception:
+                scope = win32com.client.Dispatch(self.driver)
+                mount_log(f"Driver={self.driver} (nouvelle instance)")
 
         if not scope.Connected:
             scope.Connected = True
@@ -134,7 +145,16 @@ class AscomMountLink(MountLink):
         if not ASCOM_AVAILABLE:
             raise RuntimeError("pywin32 indisponible")
 
-        return bool(self._get_scope().AtPark)
+        scope = self._get_scope()
+
+        # EQMOD peut rester joignable en COM tout en ayant perdu la monture :
+        # il repond alors AtPark=False, ce qui ferait croire a un etat valide.
+        # On prefere « inconnu » — le toit est refuse dans les deux cas, mais
+        # l'operateur voit la vraie panne.
+        if not scope.Connected:
+            raise RuntimeError("driver ASCOM non connecte")
+
+        return bool(scope.AtPark)
 
     # -- API -------------------------------------------------------------
 
@@ -170,12 +190,119 @@ class AscomMountLink(MountLink):
             self._at_park_at = now
             return value
 
+    def reconnect(self, timeout=15.0):
+        """Ferme puis rouvre la liaison au driver, en attendant qu'elle vive.
+
+        Apres un debranchement, EQMOD peut rendre la main avant d'avoir
+        reellement reouvert le port de la monture : `Connected` reste faux
+        quelques secondes. Un seul essai donnerait un faux echec.
+        """
+
+        if not ASCOM_AVAILABLE:
+            return False
+
+        with self._lock:
+
+            previous = self._scope
+            self._scope = None
+
+            if previous is not None:
+                try:
+                    previous.Connected = False
+                except Exception:
+                    pass
+
+                previous = None
+
+                # Laisse le serveur local fermer la session avant d'en ouvrir
+                # une neuve.
+                time.sleep(1.0)
+
+            self._at_park = None
+            self._at_park_at = 0.0
+            self._next_probe = 0.0
+            self._last_error = None
+
+            try:
+                scope = self._connect_scope(fresh=True)
+            except Exception as ex:
+                self._last_error = str(ex)
+                mount_log(f"Reconnexion impossible : {ex}")
+                return False
+
+            deadline = time.monotonic() + float(timeout)
+
+            attempt = 0
+
+            while time.monotonic() < deadline:
+
+                try:
+                    if scope.Connected:
+                        self._scope = scope
+                        mount_log("Driver reconnecte")
+                        return True
+                except Exception as ex:
+                    self._last_error = str(ex)
+
+                time.sleep(1.0)
+                attempt += 1
+
+                # Toutes les deux secondes, on redemande une instance : un
+                # proxy COM peut conserver un etat perime apres la perte du
+                # materiel.
+                if attempt % 2 == 0:
+                    try:
+                        scope = self._connect_scope(fresh=True)
+                    except Exception as ex:
+                        self._last_error = str(ex)
+
+            if not self._last_error:
+                self._last_error = (
+                    f"driver non connecte apres {float(timeout):.0f} s"
+                )
+
+            # Dernier recours : le processus du driver est bloque. EQMOD
+            # accepte Connected=True mais ne se connecte jamais ; le tuer et
+            # en demarrer un neuf regle le probleme en une seconde.
+            if driver.restart(self.driver):
+
+                mount_log("Processus du driver redemarre, nouvelle tentative")
+
+                self._last_error = None
+
+                try:
+                    scope = self._connect_scope(fresh=True)
+                except Exception as ex:
+                    self._last_error = str(ex)
+                    return False
+
+                deadline = time.monotonic() + float(timeout)
+
+                while time.monotonic() < deadline:
+
+                    try:
+                        if scope.Connected:
+                            self._scope = scope
+                            mount_log("Driver reconnecte apres redemarrage")
+                            return True
+                    except Exception as ex:
+                        self._last_error = str(ex)
+
+                    time.sleep(1.0)
+
+                if not self._last_error:
+                    self._last_error = (
+                        "driver non connecte apres redemarrage"
+                    )
+
+            mount_log(f"Reconnexion non confirmee : {self._last_error}")
+            return False
+
     def park(self, timeout=None):
         if not ASCOM_AVAILABLE:
             return False
 
         limit = float(timeout if timeout is not None else self.park_timeout)
-
         with self._lock:
             try:
                 scope = self._get_scope()

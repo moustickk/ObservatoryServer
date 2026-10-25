@@ -233,6 +233,45 @@ class DomeService:
             with self._lock:
                 self._parking = False
 
+    def reconnect_mount(self):
+        """Ferme puis rouvre la liaison au driver ASCOM.
+
+        Utile apres un debranchement de la monture : EQMOD peut rester
+        « connecte » avec un etat qui ne correspond plus au materiel.
+        """
+
+        reconnect = getattr(self.mount, "reconnect", None)
+
+        if not callable(reconnect):
+            return self._result(
+                False,
+                "MOUNT_RECONNECT_UNAVAILABLE",
+                "Reconnexion non disponible pour cette monture",
+            )
+
+        log.warning("Reconnexion de la monture demandee")
+
+        try:
+            ok = reconnect()
+        except Exception as ex:
+            log.exception("Echec de la reconnexion monture")
+            return self._result(False, "MOUNT_RECONNECT_FAILED", str(ex))
+
+        if ok:
+            log.info("Monture reconnectee")
+            return self._result(True)
+
+        log.error("Reconnexion de la monture impossible")
+
+        detail = getattr(getattr(self.mount, "link", None), "last_error", None)
+
+        message = "Reconnexion impossible : verifier le cable et le driver EQMOD"
+
+        if detail:
+            message = f"{message} ({detail})"
+
+        return self._result(False, "MOUNT_RECONNECT_FAILED", message)
+
     # -- surveillance ----------------------------------------------------
     def sync(self):
         """Recopie l'etat publie par le thread serie. Aucun acces au port.
@@ -307,5 +346,7 @@ class DomeService:
                 "at_park": mount["at_park"],
                 "description": mount["description"],
                 "stale": mount.get("stale", False),
+                "error": mount.get("error"),
+                "link_error": mount.get("link_error"),
             },
         }

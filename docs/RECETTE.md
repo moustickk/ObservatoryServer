@@ -86,7 +86,11 @@ Durée indicative : 1 h 30, dont 30 min de mouvements réels.
       mouvement**.
 - [ ] Arrêter EQMOD (monture injoignable), tenter une commande.
 - [ ] **Attendu** : refus `MOUNT_UNKNOWN`, aucun mouvement.
-- [ ] Reconnecter et parquer : les commandes repassent.
+- [ ] Débrancher puis rebrancher la monture sans redémarrer EQMOD.
+- [ ] **Attendu** : `MOUNT_UNKNOWN` ; cliquer **Reconnecter**.
+- [ ] **Attendu** : le driver est relancé si nécessaire, l'état revient
+      (`available = true`), puis **Parquer la monture**.
+- [ ] Les commandes du toit repassent.
 
 ---
 

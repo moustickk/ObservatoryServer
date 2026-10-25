@@ -120,6 +120,12 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   n'a plus de journalisation propre : ses messages remontent au gestionnaire
   unique, donc une seule rotation cohérente. La sortie brute du processus va
   dans `console.log`.
+- **Reconnexion de la monture.** Bouton *Reconnecter* : ferme la session
+  ASCOM (`Connected = False`), en ouvre une neuve (`DispatchEx`) et attend.
+  Si le driver reste bloqué — EQMOD accepte `Connected = True` sans jamais se
+  connecter après une perte de liaison — son processus est retrouvé par le
+  registre (ProgID → CLSID → LocalServer32, les deux vues) puis redémarré.
+  Vérifié en réel : reconnexion réussie après redémarrage d'EQMOD.
 - **Réveil immédiat de l'agent.** Un changement de verdict (mesure ou
   forçage) pose un événement partagé : l'agent n'attend plus son cycle de
   5 s. Son état courant (`parking`, `waiting_park`, `closed`, `not_parked`…)
@@ -208,6 +214,7 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/ui/#logs (ouvre directement la fenêtre des journaux)
 - http://localhost:11111/api/mount/drivers (pilotes ASCOM installes)
 - http://localhost:11111/api/mount/park (POST, parkage non bloquant)
+- http://localhost:11111/api/mount/reconnect (POST, session ASCOM neuve)
 - http://localhost:11111/docs
 - http://localhost:11111/management/v1/configureddevices
 
@@ -277,6 +284,7 @@ backend/
   mount/
     link.py              MountLink : Ascom (EQMOD) / Simulated
     monitor.py           thread COM dédié + cache de AtPark
+    driver.py            localisation et redémarrage du processus du driver
   safety/
     monitor.py           boucle météo fail-safe
     agent.py             agent de sauvegarde (ferme sur UNSAFE)

@@ -82,6 +82,7 @@ class StubMountLink:
         self.calls = 0
         self.park_calls = 0
         self.park_result = True
+        self.reconnects = 0
 
     def at_park(self):
         self.calls += 1
@@ -94,6 +95,10 @@ class StubMountLink:
         if self.park_result:
             self.parked = True
         return self.park_result
+
+    def reconnect(self):
+        self.reconnects += 1
+        return True
 
 
 # -- thread serie --------------------------------------------------------
@@ -514,3 +519,37 @@ def test_lagent_expose_son_etat():
     agent.tick()
 
     assert agent.snapshot()["state"] == "closed"
+
+
+def test_reconnect_met_a_jour_le_cache():
+    link = StubMountLink(parked=False)
+    monitor = MountMonitor(link, poll_seconds=0.02, stale_seconds=1.0)
+    monitor.start()
+
+    try:
+        deadline = time.monotonic() + 1.0
+        while time.monotonic() < deadline and monitor.at_park() is None:
+            time.sleep(0.01)
+
+        assert monitor.reconnect() is True
+        assert link.reconnects == 1
+
+    finally:
+        monitor.stop()
+
+
+def test_reconnect_mount_signale_le_succes(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "backend.common.state.STATE_FILE",
+        tmp_path / "roof_state.json",
+    )
+
+    from backend.dome.service import DomeService
+
+    mount = StubMountLink(parked=False)
+    dome = DomeService(SilentRoof(), mount, {"full_travel_time": 48})
+
+    result = dome.reconnect_mount()
+
+    assert result["ok"] is True
+    assert mount.reconnects == 1

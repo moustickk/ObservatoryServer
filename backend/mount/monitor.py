@@ -35,11 +35,12 @@ POLL_SECONDS = 2.0
 STALE_SECONDS = 8.0
 
 
-class _ParkRequest:
+class _Request:
 
-    __slots__ = ("timeout", "done", "ok", "error")
+    __slots__ = ("kind", "timeout", "done", "ok", "error")
 
-    def __init__(self, timeout):
+    def __init__(self, kind, timeout=None):
+        self.kind = kind
         self.timeout = timeout
         self.done = threading.Event()
         self.ok = False
@@ -126,6 +127,7 @@ class MountMonitor:
                 "available": bool(getattr(self.link, "available", False)),
                 "description": self.link.description,
                 "error": self._error,
+                "link_error": getattr(self.link, "last_error", None),
             }
 
     # -- commandes -------------------------------------------------------
@@ -136,7 +138,7 @@ class MountMonitor:
         if self._thread is None or not self._thread.is_alive():
             return False
 
-        request = _ParkRequest(timeout)
+        request = _Request("park", timeout)
         self._requests.put(request)
 
         wait_for = float(timeout if timeout is not None else 60.0) + 5.0
@@ -145,6 +147,23 @@ class MountMonitor:
 
         if request.error:
             log.warning("Parkage impossible : %s", request.error)
+
+        return request.ok
+
+    def reconnect(self, timeout=15.0):
+        """Ferme puis rouvre le driver (apres un debranchement de la monture)."""
+
+        if self._thread is None or not self._thread.is_alive():
+            return False
+
+        request = _Request("reconnect", timeout)
+        self._requests.put(request)
+
+        if not request.done.wait(float(timeout) + 5.0):
+            return False
+
+        if request.error:
+            log.warning("Reconnexion monture impossible : %s", request.error)
 
         return request.ok
 
@@ -177,6 +196,19 @@ class MountMonitor:
         finally:
             request.done.set()
 
+    def _handle_reconnect(self, request):
+        try:
+            reconnect = getattr(self.link, "reconnect", None)
+            request.ok = bool(reconnect()) if callable(reconnect) else True
+            # Etat inconnu jusqu'au prochain sondage : c'est la verite.
+            self._publish(None)
+        except Exception as ex:
+            request.error = str(ex)
+            request.ok = False
+            self._publish(None, str(ex))
+        finally:
+            request.done.set()
+
     def _loop(self):
         if pythoncom is not None:
             pythoncom.CoInitialize()
@@ -189,7 +221,10 @@ class MountMonitor:
                     request = None
 
                 if request is not None:
-                    self._handle_park(request)
+                    if request.kind == "park":
+                        self._handle_park(request)
+                    else:
+                        self._handle_reconnect(request)
                     continue
 
                 self._poll()

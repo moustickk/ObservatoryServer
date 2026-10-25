@@ -111,6 +111,12 @@ documentation du firmware directement dans le navigateur ; le bouton
 Les commandes demandent confirmation. Un refus est toujours expliqué (interlock,
 mouvement opposé, défaut du contrôleur).
 
+Le bouton **Reconnecter** ferme la session ASCOM et en ouvre une neuve. Si le
+driver refuse encore de se connecter (cas d'EQMOD après une perte de liaison),
+son processus est redémarré automatiquement — ce qui peut interrompre NINA.
+Après reconnexion, la monture est généralement « non parquée » : la parquer
+avant de fermer le toit.
+
 ### Configuration
 
 Les réglages sont validés et typés côté serveur. Un réglage inconnu répond 404,
@@ -209,7 +215,8 @@ repartir de zéro.
 |---|---|---|
 | L'icône n'apparaît pas | une instance tourne déjà | vérifier la zone de notification |
 | « hors ligne — COM4 » | port tenu par l'IDE ou un autre serveur | fermer l'IDE, redémarrer l'application |
-| `MOUNT_UNKNOWN` | EQMOD non lancé ou injoignable | lancer EQMOD, connecter la monture |
+| `MOUNT_UNKNOWN` | EQMOD non lancé, ou liaison perdue | bouton **Reconnecter**, puis parquer |
+| Monture perdue après débranchement | EQMOD reste bloqué même rebranché | **Reconnecter** : ferme la session, redémarre le driver si besoin |
 | Refus 1035 « mouvement opposé » | inversion demandée en cours de trajet | Arrêter, puis relancer |
 | Refus 1035 « défaut » | `TIMEOUT`, `NO_MOTION` ou `LIMITS` | vérifier le toit, puis `STOP` pour acquitter |
 | Le toit ne bouge pas | butée déjà atteinte, défaut, ou monture non parquée | lire le message de refus |

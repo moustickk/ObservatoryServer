@@ -206,6 +206,11 @@ def mount_park():
     return _command(_services().dome.park_mount())
 
 
+@app.post("/api/mount/reconnect")
+def mount_reconnect():
+    return _command(_services().dome.reconnect_mount())
+
+
 @app.get("/api/mount/status")
 def mount_status():
     return _services().dome.status()["mount"]
