@@ -96,7 +96,16 @@ async def local_only_ui(request: Request, call_next):
                 },
             )
 
-    return await call_next(request)
+    response = await call_next(request)
+
+    # Les fichiers de l'interface changent a chaque mise a jour. Sans cette
+    # consigne, le navigateur peut reutiliser un app.js ancien sans revalider :
+    # le bouton existe dans le HTML mais son code est absent, et la fonction
+    # semble ne pas marcher. `no-cache` force la revalidation (ETag court).
+    if request.url.path.startswith("/ui"):
+        response.headers["Cache-Control"] = "no-cache"
+
+    return response
 
 
 def _services():
