@@ -505,6 +505,107 @@ async function restartServer() {
   }
 }
 
+// -- journaux ------------------------------------------------------------
+
+const logsDialog = $("logs-dialog");
+
+let logsTimer = null;
+
+async function loadLogList() {
+  const result = await api("/api/logs");
+  if (!result.ok) {
+    return;
+  }
+
+  const select = $("logs-select");
+  const current = select.value;
+
+  select.replaceChildren();
+
+  for (const entry of result.data.logs) {
+    if (!entry.exists) {
+      continue;
+    }
+    const kilo = Math.max(1, Math.round(entry.size / 1024));
+    select.append(new Option(`${entry.name} — ${kilo} Ko`, entry.name));
+  }
+
+  if (current && [...select.options].some((option) => option.value === current)) {
+    select.value = current;
+  } else if (select.options.length) {
+    select.selectedIndex = 0;
+  }
+}
+
+async function refreshLogs() {
+  const name = $("logs-select").value;
+  if (!name) {
+    return;
+  }
+
+  const lines = $("logs-lines").value;
+  const result = await api(`/api/logs/${encodeURIComponent(name)}?lines=${lines}`);
+  const pre = $("logs-content");
+
+  if (!result.ok) {
+    pre.textContent = `Lecture impossible (${result.status})`;
+    return;
+  }
+
+  const data = result.data || {};
+  const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 24;
+
+  pre.textContent = (data.lines || []).join("\n") || "(journal vide)";
+
+  if (atBottom || $("logs-auto").checked) {
+    pre.scrollTop = pre.scrollHeight;
+  }
+
+  $("logs-meta").textContent =
+    `${(data.lines || []).length} ligne(s) · ${((data.size || 0) / 1024).toFixed(1)} Ko` +
+    (data.truncated ? " · début tronqué" : "");
+}
+
+async function openLogs() {
+  if (!logsDialog.open) {
+    logsDialog.showModal();
+  }
+
+  await loadLogList();
+  await refreshLogs();
+
+  if (logsTimer) {
+    clearInterval(logsTimer);
+  }
+
+  logsTimer = setInterval(async () => {
+    if (!logsDialog.open) {
+      return;
+    }
+    await loadLogList();
+    if ($("logs-auto").checked) {
+      await refreshLogs();
+    }
+  }, 2000);
+}
+
+function closeLogs() {
+  logsDialog.close();
+}
+
+$("btn-logs").addEventListener("click", openLogs);
+$("logs-close").addEventListener("click", closeLogs);
+$("logs-refresh").addEventListener("click", refreshLogs);
+$("logs-select").addEventListener("change", refreshLogs);
+$("logs-lines").addEventListener("change", refreshLogs);
+
+logsDialog.addEventListener("close", () => {
+  if (logsTimer) {
+    clearInterval(logsTimer);
+    logsTimer = null;
+  }
+});
+
 // -- demarrage -----------------------------------------------------------
 
 $("btn-open").addEventListener("click", () => command("/api/dome/open", "Ouvrir le toit"));
@@ -521,3 +622,8 @@ $("btn-restart").addEventListener("click", restartServer);
 loadConfig();
 refresh();
 setInterval(refresh, POLL_MS);
+
+// Lien direct vers les journaux : /ui/#logs (utile au support et aux tests).
+if (window.location.hash === "#logs") {
+  openLogs();
+}

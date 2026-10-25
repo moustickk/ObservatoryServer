@@ -151,6 +151,8 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/health
 - http://localhost:11111/api/config/schema (types, groupes, descriptions)
 - http://localhost:11111/api/server/restart (POST, relance apres configuration)
+- http://localhost:11111/api/logs (liste et fin des journaux)
+- http://localhost:11111/ui/#logs (ouvre directement la fenêtre des journaux)
 - http://localhost:11111/api/mount/drivers (pilotes ASCOM installes)
 - http://localhost:11111/api/mount/park (POST, parkage non bloquant)
 - http://localhost:11111/docs
@@ -219,8 +221,10 @@ backend/
     agent.py             agent de sauvegarde (ferme sur UNSAFE)
     weather_provider.py  Open-Meteo, pire cas de la fenêtre
     evaluator.py         seuils
+  common/
+    logs_api.py          lecture des journaux (fin de fichier, noms autorisés)
   web/
-    index.html           interface locale (état, météo, commandes, config)
+    index.html           interface locale (état, météo, commandes, config, journaux)
     style.css
     app.js               sans dépendance, hors ligne
     service.py           façade SafetyService
@@ -251,10 +255,14 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **102 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **111 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, interface web). Lancer avec
   `.\\.venv\\Scripts\\python.exe -m pytest`.
+- Journaux consultables depuis l'interface : `GET /api/logs` et
+  `GET /api/logs/{nom}?lines=N`. Seuls quatre noms sont acceptés (pas de
+  traversée de chemin), et la lecture se fait par blocs depuis la fin, bornée
+  à 512 Ko : `server.log` peut grossir sans conséquence.
 - Interface web vérifiée au rendu réel (Edge headless, 1280 px) : état,
   météo, commandes et les 26 réglages groupés. Écriture de configuration
   testée de bout en bout (200 / 404 / 400 avec message).

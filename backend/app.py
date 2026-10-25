@@ -25,6 +25,7 @@ from backend.common.config_update_api import (
 )
 from backend.common.constants import APP_NAME, VERSION
 from backend.common.health import health_snapshot
+from backend.common.logs_api import UnknownLog, list_logs, tail_log
 
 
 log = logging.getLogger(__name__)
@@ -206,6 +207,29 @@ def mount_drivers():
         "count": len(drivers),
         "drivers": drivers,
         "current": settings_manager.get("telescope_driver", ""),
+    }
+
+
+# -- journaux ------------------------------------------------------------
+
+@app.get("/api/logs")
+def logs_list():
+    return {"logs": list_logs()}
+
+
+@app.get("/api/logs/{name}")
+def logs_tail(name: str, lines: int = 200):
+
+    try:
+        content, size, truncated = tail_log(name, lines)
+    except UnknownLog:
+        raise HTTPException(status_code=404, detail=f"Journal inconnu : {name}") from None
+
+    return {
+        "name": name,
+        "lines": content,
+        "size": size,
+        "truncated": truncated,
     }
 
 

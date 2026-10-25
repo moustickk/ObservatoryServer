@@ -17,6 +17,7 @@
       <span id="mode" class="tag">…</span>
       <span id="link" class="tag">…</span>
       <span id="updated" class="tag muted">—</span>
+      <button id="btn-logs" class="ghost small">Journaux</button>
     </div>
   </header>
 
@@ -103,6 +104,29 @@
     <a href="/management/v1/configureddevices" target="_blank" rel="noreferrer">Alpaca</a>
     <span id="footer-version" class="muted"></span>
   </footer>
+
+  <dialog id="logs-dialog">
+    <div class="dialog-head">
+      <h2>Journaux</h2>
+      <div class="dialog-actions">
+        <select id="logs-select" aria-label="Journal"></select>
+        <select id="logs-lines" aria-label="Nombre de lignes">
+          <option value="100">100 lignes</option>
+          <option value="200" selected>200 lignes</option>
+          <option value="500">500 lignes</option>
+          <option value="2000">2000 lignes</option>
+        </select>
+        <label class="follow">
+          <input type="checkbox" id="logs-auto" checked>
+          suivi
+        </label>
+        <button id="logs-refresh" class="ghost small">Rafraîchir</button>
+        <button id="logs-close" class="ghost small">Fermer</button>
+      </div>
+    </div>
+    <pre id="logs-content">Chargement…</pre>
+    <p id="logs-meta" class="hint"></p>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
