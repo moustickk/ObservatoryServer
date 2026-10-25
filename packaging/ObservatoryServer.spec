@@ -39,6 +39,8 @@ a = Analysis(
         (str(ROOT / "backend" / "web"), "backend/web"),
         (str(ROOT / "assets" / "observatory.ico"), "assets"),
         (str(ROOT / "firmware" / "RoofController"), "firmware/RoofController"),
+        (str(ROOT / "README.md"), "."),
+        (str(ROOT / "docs"), "docs"),
     ],
     hiddenimports=hiddenimports,
     hookspath=[],

@@ -25,6 +25,7 @@ from backend.common.config_update_api import (
     update_config,
 )
 from backend.common.constants import APP_NAME, VERSION
+from backend.common.docs_api import UnknownDocument, list_documents, render
 from backend.common.health import health_snapshot
 from backend.common.logs_api import UnknownLog, list_logs, tail_log
 
@@ -241,6 +242,22 @@ def logs_tail(name: str, lines: int = 200):
         "size": size,
         "truncated": truncated,
     }
+
+
+# -- documentation -------------------------------------------------------
+
+@app.get("/api/docs")
+def docs_list():
+    return {"documents": list_documents()}
+
+
+@app.get("/api/docs/{name}")
+def docs_render(name: str):
+
+    try:
+        return render(name)
+    except UnknownDocument:
+        raise HTTPException(status_code=404, detail=f"Document inconnu : {name}") from None
 
 
 # -- atelier Arduino -----------------------------------------------------

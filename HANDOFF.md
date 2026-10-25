@@ -114,6 +114,10 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
   un fichier de journal était inexploitable le lendemain. Le format est
   commun à `server.log`, `tray.log`, `roof.log` et `meteo_log.txt` ; la purge
   accepte encore l'ancien format ISO pour les lignes déjà écrites.
+- **Documentation embarquée et consultable depuis l'interface.** Le guide,
+  la recette et la documentation du firmware sont livrés dans l'exe et rendus
+  en HTML (`markdown`), pour rester lisibles sur le poste d'observatoire sans
+  dépôt ni lecteur Markdown.
 - **Une couleur par section dans l'interface.** Bordure et pastille d'accent
   (Toit bleu, Sécurité météo vert, Atelier Arduino cyan, Configuration
   violet) ; la carte météo passe au rouge quand le verdict est UNSAFE, et les
@@ -171,6 +175,8 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - http://localhost:11111/api/server/restart (POST, relance apres configuration)
 - http://localhost:11111/api/arduino/status (outillage, noyaux, ports)
 - http://localhost:11111/api/arduino/job (avancement du dernier travail)
+- http://localhost:11111/api/docs (guide, recette, firmware en HTML)
+- http://localhost:11111/ui/#docs (ouvre directement la documentation)
 - http://localhost:11111/api/logs (liste et fin des journaux)
 - http://localhost:11111/ui/#logs (ouvre directement la fenêtre des journaux)
 - http://localhost:11111/api/mount/drivers (pilotes ASCOM installes)
@@ -251,8 +257,10 @@ backend/
     evaluator.py         seuils
   common/
     logs_api.py          lecture des journaux (fin de fichier, noms autorisés)
+  common/
+    docs_api.py          documentation embarquée, rendue en HTML
   web/
-    index.html           interface locale (état, météo, commandes, config, journaux)
+    index.html           interface locale (état, météo, commandes, config, journaux, doc)
     style.css
     app.js               sans dépendance, hors ligne
     service.py           façade SafetyService

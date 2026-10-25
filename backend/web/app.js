@@ -660,6 +660,61 @@ function pollArduino() {
   }, 1000);
 }
 
+// -- documentation -------------------------------------------------------
+
+const docsDialog = $("docs-dialog");
+
+async function loadDoc(name) {
+  if (!name) {
+    return;
+  }
+
+  const result = await api(`/api/docs/${encodeURIComponent(name)}`);
+  const body = $("docs-content");
+
+  if (!result.ok) {
+    body.textContent = "Document indisponible.";
+    return;
+  }
+
+  body.innerHTML = result.data.html || "";
+  body.scrollTop = 0;
+}
+
+async function openDocs() {
+  if (!docsDialog.open) {
+    docsDialog.showModal();
+  }
+
+  const select = $("docs-select");
+
+  if (!select.options.length) {
+    const result = await api("/api/docs");
+
+    if (!result.ok) {
+      $("docs-content").textContent = "Documentation indisponible.";
+      return;
+    }
+
+    for (const doc of result.data.documents || []) {
+      if (doc.available) {
+        select.append(new Option(doc.title, doc.key));
+      }
+    }
+
+    select.addEventListener("change", () => loadDoc(select.value));
+  }
+
+  if (!select.value && select.options.length) {
+    select.selectedIndex = 0;
+  }
+
+  await loadDoc(select.value);
+}
+
+$("btn-docs").addEventListener("click", openDocs);
+$("docs-close").addEventListener("click", () => docsDialog.close());
+
 // -- journaux ------------------------------------------------------------
 
 const logsDialog = $("logs-dialog");
@@ -785,4 +840,6 @@ setInterval(refresh, POLL_MS);
 // Lien direct vers les journaux : /ui/#logs (utile au support et aux tests).
 if (window.location.hash === "#logs") {
   openLogs();
+} else if (window.location.hash === "#docs") {
+  openDocs();
 }

@@ -91,8 +91,9 @@ quitter.
 | **Configuration** | les réglages, groupés par domaine |
 
 Chaque section a sa couleur ; la carte météo passe au rouge quand le verdict
-est UNSAFE. Le bouton **Journaux** ouvre les quatre journaux avec suivi
-automatique.
+est UNSAFE. Le bouton **Documentation** ouvre le guide, la recette et la
+documentation du firmware directement dans le navigateur ; le bouton
+**Journaux** affiche les quatre journaux avec suivi automatique.
 
 Les commandes demandent confirmation. Un refus est toujours expliqué (interlock,
 mouvement opposé, défaut du contrôleur).

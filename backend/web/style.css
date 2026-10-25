@@ -318,6 +318,65 @@ dialog::backdrop { background: rgba(0, 0, 0, .65); }
 }
 #arduino-toolchain { margin: 0 0 12px; }
 
+/* -- documentation ----------------------------------------------------- */
+
+#docs-content {
+  max-height: calc(82vh - 76px);
+  overflow: auto;
+  padding: 18px 26px 30px;
+}
+
+.doc-body h1 { font-size: 24px; margin: 6px 0 16px; }
+.doc-body h2 {
+  font-size: 19px;
+  margin: 28px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.doc-body h3 { font-size: 16px; margin: 20px 0 8px; color: #dbe6f1; }
+.doc-body p, .doc-body li { line-height: 1.6; }
+.doc-body ul, .doc-body ol { padding-left: 24px; }
+.doc-body li { margin: 3px 0; }
+.doc-body code {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
+.doc-body pre {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow: auto;
+  font-size: 12px;
+}
+.doc-body pre code { border: 0; background: none; padding: 0; }
+.doc-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 18px;
+  font-size: 14px;
+}
+.doc-body th, .doc-body td {
+  border: 1px solid var(--line);
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.doc-body th { background: var(--panel-2); font-weight: 600; }
+.doc-body blockquote {
+  margin: 14px 0;
+  padding: 8px 14px;
+  border-left: 3px solid #1f6feb;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.doc-body a { color: #6cb6ff; }
+.doc-body hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
 @media (max-width: 600px) {
   header, main, footer { padding-left: 14px; padding-right: 14px; }
   .alarm, .notice { margin-left: 14px; margin-right: 14px; }

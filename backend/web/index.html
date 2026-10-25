@@ -17,6 +17,7 @@
       <span id="mode" class="tag">…</span>
       <span id="link" class="tag">…</span>
       <span id="updated" class="tag muted">—</span>
+      <button id="btn-docs" class="ghost small">Documentation</button>
       <button id="btn-logs" class="ghost small">Journaux</button>
     </div>
   </header>
@@ -147,6 +148,17 @@
     </div>
     <pre id="logs-content">Chargement…</pre>
     <p id="logs-meta" class="hint"></p>
+  </dialog>
+
+  <dialog id="docs-dialog">
+    <div class="dialog-head">
+      <h2>Documentation</h2>
+      <div class="dialog-actions">
+        <select id="docs-select" aria-label="Document"></select>
+        <button id="docs-close" class="ghost small">Fermer</button>
+      </div>
+    </div>
+    <div id="docs-content" class="doc-body">Chargement…</div>
   </dialog>
 
   <script src="app.js"></script>
