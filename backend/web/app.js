@@ -420,6 +420,46 @@ function fieldElement(item) {
     input.title = "Identifiant stable : non modifiable depuis l'interface";
   }
 
+  // Reglages qui desactivent une protection : confirmation obligatoire.
+  if (item.key === "close_anyway") {
+    input.addEventListener("change", () => {
+      if (
+        input.checked &&
+        !confirm(
+          "Fermer le toit même si la monture n'est pas parquée ?\n\n" +
+            "Cela supprime la protection anti-collision : le toit peut " +
+            "heurter la monture.\n\nÀ n'activer que si vous savez " +
+            "exactement ce que vous faites.",
+        )
+      ) {
+        input.checked = false;
+      }
+      wrapper.classList.toggle("danger-on", input.checked);
+    });
+    wrapper.classList.toggle("danger-on", input.checked);
+  }
+
+  if (item.key === "mount_check_mode") {
+    let previous = input.value;
+
+    input.addEventListener("change", () => {
+      if (
+        input.value === "disabled" &&
+        !confirm(
+          "Désactiver la vérification du parkage de la monture ?\n\n" +
+            "Le toit pourra bouger quelle que soit la position de la " +
+            "monture. Risque de collision.\n\nConfirmer la désactivation ?",
+        )
+      ) {
+        input.value = previous;
+      } else {
+        previous = input.value;
+      }
+      wrapper.classList.toggle("danger-on", input.value === "disabled");
+    });
+    wrapper.classList.toggle("danger-on", input.value === "disabled");
+  }
+
   const description = document.createElement("span");
   description.className = "desc";
   description.textContent = item.description || "";

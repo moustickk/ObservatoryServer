@@ -149,6 +149,14 @@ main {
 
 .field.span2 { grid-column: span 2; }
 
+.field.danger-on {
+  border-left: 3px solid var(--red);
+  border-radius: 6px;
+  padding-left: 10px;
+  background: rgba(248, 81, 73, .07);
+}
+.field.danger-on label { color: #ffb4ab; }
+
 .banner-error { margin: 16px 24px 0; }
 
 .settings { margin-top: 18px; }

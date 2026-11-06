@@ -219,7 +219,7 @@ réponde avant de conclure.
 | `auto_park_mount` | l'agent peut parquer la monture lui-même (installation non surveillée) |
 | `guard_mount` | toit fermé + monture déparquée : arrêt de la monture et parkage immédiat ; arrêt du toit s'il ferme |
 | `park_grace_seconds` | temps laissé à la monture pour se parquer |
-| `close_anyway` | fermer malgré une monture non parquée — dangereux, laisser faux |
+| `close_anyway` | fermer malgré une monture non parquée — dangereux, laisser faux (confirmation demandée) |
 | `ui_local_only` | interface et commandes réservées à la machine locale |
 | `arduino_fqbn` | carte cible de l'atelier |
 
