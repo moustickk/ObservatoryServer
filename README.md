@@ -9,6 +9,20 @@ toit se ferme même si NINA est absent, dès que la météo devient dangereuse.
 
 ---
 
+## Aperçu
+
+![Interface](docs/screenshots/interface.png)
+
+| Journaux | Atelier Arduino |
+|---|---|
+| ![Journaux](docs/screenshots/journal.png) | ![Atelier](docs/screenshots/atelier.png) |
+
+La documentation est aussi consultable depuis l'interface :
+
+![Documentation](docs/screenshots/documentation.png)
+
+---
+
 ## Sécurité — à lire avant tout
 
 Ces règles sont volontairement strictes. Elles coûtent parfois une nuit, elles
@@ -269,7 +283,7 @@ maximum), car chaque requête HTTP y laisse une ligne.
 ## Développement
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest                 # 123 tests
+.\.venv\Scripts\python.exe -m pytest                 # 165 tests
 .\.venv\Scripts\python.exe -m backend.run_api        # serveur de développement
 packaging\build.cmd -Clean                           # exe (dist\ObservatoryServer)
 packaging\build_installer.cmd                        # installateur Inno Setup
