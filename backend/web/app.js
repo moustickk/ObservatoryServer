@@ -413,6 +413,10 @@ function fieldElement(item) {
     wrapper.classList.add("span2");
   }
 
+  if (String(item.key).startsWith("pin_")) {
+    input.addEventListener("change", updatePinWarning);
+  }
+
   // Identifiants Alpaca : visibles et copiables, mais pas modifiables.
   // Les changer ferait apparaitre un second appareil dans NINA.
   if (item.read_only) {
@@ -469,6 +473,50 @@ function fieldElement(item) {
   return wrapper;
 }
 
+// -- verification du brochage --------------------------------------------
+
+function updatePinWarning() {
+  const warning = $("pin-warning");
+
+  if (!warning) {
+    return;
+  }
+
+  const seen = new Map();
+
+  for (const select of document.querySelectorAll(
+    "[data-settings='arduino'] select",
+  )) {
+    const key = select.dataset.key || "";
+
+    if (!key.startsWith("pin_")) {
+      continue;
+    }
+
+    const value = select.value;
+    const option = [...select.options].find((item) => item.value === value);
+    const label = option ? option.textContent : value;
+
+    if (!seen.has(value)) {
+      seen.set(value, label);
+    } else {
+      seen.set(value, `${seen.get(value)} et ${label}`);
+    }
+  }
+
+  const duplicated = [...seen.values()].filter((text) => text.includes(" et "));
+
+  if (duplicated.length) {
+    show(
+      warning,
+      `Broche utilisée plusieurs fois : ${duplicated.join(", ")}. ` +
+        "Le firmware refusera de compiler tant que ce n'est pas corrigé.",
+    );
+  } else {
+    hide(warning);
+  }
+}
+
 function renderConfig(data) {
   schema = data;
 
@@ -505,6 +553,8 @@ function renderConfig(data) {
 
     target.append(fields);
   }
+
+  updatePinWarning();
 }
 
 async function loadConfig() {

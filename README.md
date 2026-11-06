@@ -196,6 +196,12 @@ navigateur :
 2. **Compiler** pour vérifier ;
 3. **Téléverser** pour flasher.
 
+Le brochage se choisit dans des listes : seules les broches utilisables sont
+proposées (PWM pour RPWM/LPWM, jamais D0/D1 réservées à la liaison série,
+jamais A6/A7 qui sont des entrées analogiques seules). Le firmware **refuse de
+compiler** une configuration incohérente — broche non PWM ou broche utilisée
+deux fois — avec un message explicite.
+
 `roof_config.h` est **régénéré à chaque compilation** depuis la configuration :
 brochage, temporisations, vitesses, débit série. La section Arduino de la
 configuration contient ces valeurs.

@@ -179,6 +179,53 @@ SETTING_CHOICE_LABELS = {
     },
 }
 
+# -- brochage ------------------------------------------------------------
+#
+# Toutes les broches ne se valent pas sur un Nano/Uno (ATmega328P) :
+#
+#  - D0/D1 sont la liaison série (USB) : indispensables au protocole, jamais
+#    disponibles ;
+#  - D3, D5, D6, D9, D10, D11 savent faire du PWM (analogWrite) : obligatoire
+#    pour RPWM/LPWM, sinon les rampes de vitesse deviennent tout ou rien ;
+#  - A6/A7 n'existent qu'en entrée analogique, sans digitalRead ni tirage :
+#    inutilisables ici ;
+#  - A0..A5 (14..19) sont des entrées/sorties numériques comme les autres.
+
+PWM_PINS = (3, 5, 6, 9, 10, 11)
+
+DIGITAL_PINS = tuple(range(2, 14)) + (14, 15, 16, 17, 18, 19)
+
+
+def _pin_name(pin):
+    return f"D{pin}" if pin <= 13 else f"A{pin - 14}"
+
+
+_PIN_CHOICES = {
+    "pin_limit_open": DIGITAL_PINS,
+    "pin_limit_closed": DIGITAL_PINS,
+    "pin_bts_rpwm": PWM_PINS,
+    "pin_bts_lpwm": PWM_PINS,
+    "pin_bts_ren": DIGITAL_PINS,
+    "pin_bts_len": DIGITAL_PINS,
+}
+
+for _key, _pins in _PIN_CHOICES.items():
+
+    SETTING_CHOICES[_key] = tuple(str(pin) for pin in _pins)
+
+    _labels = {}
+
+    for _pin in _pins:
+
+        _text = _pin_name(_pin)
+
+        if _key in ("pin_bts_rpwm", "pin_bts_lpwm"):
+            _text += " (PWM)"
+
+        _labels[str(_pin)] = _text
+
+    SETTING_CHOICE_LABELS[_key] = _labels
+
 SETTING_LABELS = {
     # general
     "simulation": "Mode simulation",
@@ -449,6 +496,11 @@ def update_setting(key, value):
             f"{key} : identifiant stable, non modifiable "
             "(le changer cree un appareil en double dans NINA)"
         )
+
+    if key in SETTING_CHOICES and str(value) not in SETTING_CHOICES[key]:
+        allowed = ", ".join(SETTING_CHOICES[key])
+        label = SETTING_LABELS.get(key, key)
+        raise ValueError(f"{label} : valeur attendue parmi {allowed}")
 
     validated = _coerce(key, DEFAULT_SETTINGS[key], value)
 

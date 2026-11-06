@@ -177,3 +177,32 @@ def test_les_valeurs_de_liste_sont_traduites():
 
         for choice in item["choices"]:
             assert labels.get(choice), (item["key"], choice)
+
+
+def test_les_broches_proposees_sont_valides():
+    items = {item["key"]: item for item in settings_manager.schema()["settings"]}
+
+    pwm = {"3", "5", "6", "9", "10", "11"}
+
+    assert set(items["pin_bts_rpwm"]["choices"]) == pwm
+    assert set(items["pin_bts_lpwm"]["choices"]) == pwm
+
+    limits = set(items["pin_limit_open"]["choices"])
+    assert "2" in limits
+    assert "14" in limits          # A0
+    assert "0" not in limits       # serie
+    assert "1" not in limits
+    assert "20" not in limits      # A6, entree analogique seule
+
+    assert items["pin_bts_rpwm"]["choice_labels"]["5"] == "D5 (PWM)"
+    assert items["pin_limit_open"]["choice_labels"]["14"] == "A0"
+
+
+def test_une_broche_non_pwm_est_refusee():
+    with pytest.raises(ValueError):
+        settings_manager.update_setting("pin_bts_rpwm", "7")
+
+
+def test_une_valeur_hors_liste_est_refusee():
+    with pytest.raises(ValueError):
+        settings_manager.update_setting("mount_check_mode", "peut-etre")

@@ -93,6 +93,12 @@ c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
 - **`STOP` acquitte un défaut.** C'est le geste de reprise après un
   `TIMEOUT`, `NO_MOTION` ou `LIMITS`. Aucune autre commande n'efface un
   défaut.
+- **Brochage contraint.** Toutes les broches d'un Nano/Uno ne sont pas
+  interchangeables : D0/D1 sont la liaison série, seules D3/D5/D6/D9/D10/D11
+  font du PWM (obligatoire pour RPWM/LPWM), A6/A7 sont des entrées
+  analogiques seules. L'interface propose des listes par usage, l'API refuse
+  une valeur hors liste, et le firmware refuse de compiler une broche
+  invalide ou utilisée deux fois.
 - **Téléversement Arduino : la liaison série est suspendue.** avrdude ne
   peut pas ouvrir COM4 tant que le serveur le tient. L'atelier refuse si le
   toit est en mouvement, libère le port, téléverse, puis reprend la liaison

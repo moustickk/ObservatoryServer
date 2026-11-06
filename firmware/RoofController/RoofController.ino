@@ -41,6 +41,59 @@
 
 #include "roof_config.h"
 
+/* -- Verification du brochage -------------------------------------------
+ *
+ * Faite a la compilation : une configuration incoherente ne peut pas etre
+ * televersee. L'interface ne propose que des broches valides, mais le fichier
+ * de configuration reste modifiable a la main.
+ */
+
+#define ROOF_PIN_BIT(p) (1UL << (p))
+
+#if (PIN_LIMIT_OPEN < 2) || (PIN_LIMIT_OPEN > 19)
+#error "La butee d'ouverture doit etre sur D2..D13 ou A0..A5"
+#endif
+
+#if (PIN_LIMIT_CLOSED < 2) || (PIN_LIMIT_CLOSED > 19)
+#error "La butee de fermeture doit etre sur D2..D13 ou A0..A5"
+#endif
+
+#if (PIN_BTS_REN < 2) || (PIN_BTS_REN > 19)
+#error "R_EN doit etre sur D2..D13 ou A0..A5"
+#endif
+
+#if (PIN_BTS_LEN < 2) || (PIN_BTS_LEN > 19)
+#error "L_EN doit etre sur D2..D13 ou A0..A5"
+#endif
+
+#if (PIN_BTS_RPWM != 3) && (PIN_BTS_RPWM != 5) && (PIN_BTS_RPWM != 6) && \
+    (PIN_BTS_RPWM != 9) && (PIN_BTS_RPWM != 10) && (PIN_BTS_RPWM != 11)
+#error "RPWM doit etre une broche PWM : D3, D5, D6, D9, D10 ou D11"
+#endif
+
+#if (PIN_BTS_LPWM != 3) && (PIN_BTS_LPWM != 5) && (PIN_BTS_LPWM != 6) && \
+    (PIN_BTS_LPWM != 9) && (PIN_BTS_LPWM != 10) && (PIN_BTS_LPWM != 11)
+#error "LPWM doit etre une broche PWM : D3, D5, D6, D9, D10 ou D11"
+#endif
+
+#if ((ROOF_PIN_BIT(PIN_LIMIT_OPEN) & ROOF_PIN_BIT(PIN_LIMIT_CLOSED)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_OPEN) & ROOF_PIN_BIT(PIN_BTS_RPWM)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_OPEN) & ROOF_PIN_BIT(PIN_BTS_LPWM)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_OPEN) & ROOF_PIN_BIT(PIN_BTS_REN)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_OPEN) & ROOF_PIN_BIT(PIN_BTS_LEN)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_CLOSED) & ROOF_PIN_BIT(PIN_BTS_RPWM)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_CLOSED) & ROOF_PIN_BIT(PIN_BTS_LPWM)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_CLOSED) & ROOF_PIN_BIT(PIN_BTS_REN)) || \
+     (ROOF_PIN_BIT(PIN_LIMIT_CLOSED) & ROOF_PIN_BIT(PIN_BTS_LEN)) || \
+     (ROOF_PIN_BIT(PIN_BTS_RPWM) & ROOF_PIN_BIT(PIN_BTS_LPWM)) || \
+     (ROOF_PIN_BIT(PIN_BTS_RPWM) & ROOF_PIN_BIT(PIN_BTS_REN)) || \
+     (ROOF_PIN_BIT(PIN_BTS_RPWM) & ROOF_PIN_BIT(PIN_BTS_LEN)) || \
+     (ROOF_PIN_BIT(PIN_BTS_LPWM) & ROOF_PIN_BIT(PIN_BTS_REN)) || \
+     (ROOF_PIN_BIT(PIN_BTS_LPWM) & ROOF_PIN_BIT(PIN_BTS_LEN)) || \
+     (ROOF_PIN_BIT(PIN_BTS_REN) & ROOF_PIN_BIT(PIN_BTS_LEN)))
+#error "Deux fonctions utilisent la meme broche"
+#endif
+
 /* -- Etats --------------------------------------------------------------- */
 
 enum RoofState : uint8_t {

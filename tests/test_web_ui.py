@@ -161,3 +161,11 @@ def test_les_onglets_separent_les_domaines():
 
     # Plus de formulaire unique : chaque domaine porte ses reglages.
     assert "config-form" not in html
+
+
+def test_avertissement_broches_doubles():
+    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="pin-warning"' in html
+    assert "updatePinWarning" in js
