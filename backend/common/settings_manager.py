@@ -164,6 +164,73 @@ SETTING_CHOICES = {
     ),
 }
 
+# Libelles affiches dans l'interface. Les clefs techniques restent visibles
+# dans le fichier de configuration et dans l'API ; ici, c'est pour l'humain.
+# Libelles des valeurs de liste, quand la valeur technique n'est pas lisible.
+SETTING_CHOICE_LABELS = {
+    "mount_check_mode": {
+        "strict": "Strict — refus si non parquée",
+        "disabled": "Désactivé — aucune vérification",
+    },
+    "arduino_fqbn": {
+        "arduino:avr:nano": "Arduino Nano (bootloader récent)",
+        "arduino:avr:nano:cpu=atmega328old": "Arduino Nano (ancien bootloader)",
+        "arduino:avr:uno": "Arduino Uno",
+    },
+}
+
+SETTING_LABELS = {
+    # general
+    "simulation": "Mode simulation",
+    "server_port": "Port du serveur",
+    "dome_unique_id": "Identifiant Alpaca du dôme",
+    "safety_unique_id": "Identifiant Alpaca du SafetyMonitor",
+    "ui_local_only": "Interface locale uniquement",
+    # toit
+    "serial_port": "Port série",
+    "baudrate": "Débit série",
+    "full_travel_time": "Temps de trajet",
+    "max_travel_time": "Sécurité de trajet",
+    # monture
+    "telescope_driver": "Pilote ASCOM",
+    "park_timeout": "Délai de parkage",
+    "park_grace_seconds": "Grâce de parkage",
+    "guard_mount": "Protection monture",
+    "auto_park_mount": "Parkage automatique",
+    "close_anyway": "Fermer sans parkage",
+    "mount_check_mode": "Contrôle du parkage",
+    "simulation_mount_parked": "Monture simulée parquée",
+    # meteo
+    "max_wind_speed": "Vent maximal",
+    "max_wind_gust": "Rafales maximales",
+    "max_rain_probability": "Probabilité de pluie",
+    "max_rain_mm": "Cumul de pluie",
+    "max_cloud_cover": "Couverture nuageuse",
+    "min_temperature": "Température minimale",
+    "lookahead_hours": "Fenêtre de prévision",
+    "weather_max_age_minutes": "Âge maximal des mesures",
+    "weather_cache_minutes": "Validité du cache",
+    "weather_update_seconds": "Rafraîchissement météo",
+    "safety_agent_enabled": "Agent de sauvegarde",
+    # arduino
+    "arduino_cli_path": "Chemin d'arduino-cli",
+    "arduino_fqbn": "Carte cible",
+    "arduino_upload_port": "Port de téléversement",
+    "pin_limit_open": "Broche fin de course ouverture",
+    "pin_limit_closed": "Broche fin de course fermeture",
+    "pin_bts_rpwm": "Broche RPWM",
+    "pin_bts_lpwm": "Broche LPWM",
+    "pin_bts_ren": "Broche R_EN",
+    "pin_bts_len": "Broche L_EN",
+    "roof_no_motion_ms": "Délai de non-mouvement",
+    "roof_debounce_ms": "Anti-rebond",
+    "roof_direction_dead_ms": "Temps mort de changement de sens",
+    "roof_ramp_start_ms": "Rampe de démarrage",
+    "roof_ramp_stop_ms": "Rampe d'arrêt",
+    "roof_pwm_min": "Vitesse minimale (PWM)",
+    "roof_pwm_max": "Vitesse maximale (PWM)",
+}
+
 # Identifiants Alpaca : stables par nature. Les modifier cree un appareil en
 # double dans NINA, qui perd alors son association avec le toit existant.
 # L'API les refuse ; une remise a zero reste possible en editant le fichier
@@ -207,6 +274,7 @@ def schema():
 
         item = {
             "key": key,
+            "label": SETTING_LABELS.get(key, key),
             "group": group,
             "type": _type_name(default),
             "default": default,
@@ -218,6 +286,9 @@ def schema():
 
         if key in SETTING_CHOICES:
             item["choices"] = list(SETTING_CHOICES[key])
+
+        if key in SETTING_CHOICE_LABELS:
+            item["choice_labels"] = dict(SETTING_CHOICE_LABELS[key])
 
         items.append(item)
 

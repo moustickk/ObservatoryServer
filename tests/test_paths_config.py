@@ -158,3 +158,22 @@ def test_un_fichier_avec_bom_est_accepte(monkeypatch, tmp_path):
     assert settings["server_port"] == 11112
     assert settings["simulation"] is False
     assert not (tmp_path / "settings.json.bad").exists()
+
+
+def test_chaque_reglage_a_un_libelle_en_francais():
+    """L'interface ne doit jamais afficher une cle technique."""
+
+    for item in settings_manager.schema()["settings"]:
+        assert item["label"], item["key"]
+        assert item["label"] != item["key"], item["key"]
+
+
+def test_les_valeurs_de_liste_sont_traduites():
+    for item in settings_manager.schema()["settings"]:
+        if "choices" not in item:
+            continue
+
+        labels = item.get("choice_labels") or {}
+
+        for choice in item["choices"]:
+            assert labels.get(choice), (item["key"], choice)

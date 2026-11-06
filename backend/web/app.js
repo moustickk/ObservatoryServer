@@ -349,7 +349,7 @@ function fieldElement(item) {
   wrapper.className = "field";
 
   const label = document.createElement("label");
-  label.textContent = item.key;
+  label.textContent = item.label || item.key;
   label.htmlFor = `cfg-${item.key}`;
 
   let input;
@@ -366,7 +366,8 @@ function fieldElement(item) {
       for (const choice of item.choices) {
         const option = document.createElement("option");
         option.value = choice;
-        option.textContent = choice;
+        option.textContent =
+          (item.choice_labels && item.choice_labels[choice]) || choice;
         input.append(option);
       }
       input.value = item.value;
