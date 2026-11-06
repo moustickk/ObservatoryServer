@@ -10,6 +10,8 @@ lecteur Markdown.
 
 from pathlib import Path
 
+import re
+
 import markdown
 
 from backend.common.paths import APP_DIR
@@ -22,6 +24,12 @@ DOCUMENTS = {
 }
 
 EXTENSIONS = ("tables", "fenced_code", "sane_lists")
+
+_IMAGE = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+
+# Section « Aperçu » du README : uniquement des captures du depot, qui ne se
+# resolvent pas dans l'application et laissent des tableaux vides.
+_APERCU = re.compile(r"^## Aper[çc]u\s*$.*?(?=^## |\Z)", re.MULTILINE | re.DOTALL)
 
 
 class UnknownDocument(KeyError):
@@ -60,7 +68,13 @@ def render(name):
 
     text = path.read_text(encoding="utf-8")
 
+    # La galerie de captures n'a pas de sens dans l'application elle-meme.
+    text = _APERCU.sub("", text)
+
     html = markdown.markdown(text, extensions=list(EXTENSIONS))
+
+    # Toute autre image du depot resterait cassee dans l'application.
+    html = _IMAGE.sub("", html)
 
     return {
         "key": name,

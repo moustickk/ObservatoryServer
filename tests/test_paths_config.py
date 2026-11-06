@@ -206,3 +206,14 @@ def test_une_broche_non_pwm_est_refusee():
 def test_une_valeur_hors_liste_est_refusee():
     with pytest.raises(ValueError):
         settings_manager.update_setting("mount_check_mode", "peut-etre")
+
+
+def test_les_descriptions_ne_citent_pas_de_cle_technique():
+    """Une description doit rester lisible : pas de nom de variable."""
+
+    items = settings_manager.schema()["settings"]
+    keys = [item["key"] for item in items if "_" in item["key"]]
+
+    for item in items:
+        for key in keys:
+            assert key not in item["description"], (item["key"], key)

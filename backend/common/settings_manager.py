@@ -114,14 +114,14 @@ SETTING_INFO = {
     "serial_port": ("toit", "Port serie de l'Arduino (par exemple COM4)."),
     "baudrate": ("toit", "Debit de la liaison serie ; doit correspondre au firmware."),
     "full_travel_time": ("toit", "Temps de trajet complet mesure, en secondes (estimation de position)."),
-    "max_travel_time": ("toit", "Doit rester egal a ROOF_MAX_TRAVEL_MS du firmware : c'est lui qui tranche."),
+    "max_travel_time": ("toit", "Doit rester egal a la securite de trajet du firmware : c'est elle qui tranche."),
     # monture
     "telescope_driver": ("monture", "ProgID ASCOM du driver (EQMOD.Telescope, ou EQMOD_SIM.Telescope pour un essai)."),
     "park_timeout": ("monture", "Delai maximal d'attente d'un parkage, en secondes."),
     "park_grace_seconds": ("monture", "Temps laisse a la monture pour se parquer avant que le toit refuse."),
     "auto_park_mount": ("monture", "L'agent de sauvegarde peut parquer lui-meme la monture. Jamais sur une commande interactive."),
     "close_anyway": ("monture", "Fermer le toit meme si la monture n'est pas parquee. Dangereux, desactive par defaut."),
-    "mount_check_mode": ("monture", "strict : refus si la monture n'est pas parquee. disabled : aucune verification."),
+    "mount_check_mode": ("monture", "Strict refuse si la monture n'est pas parquee ; desactive supprime la verification."),
     "guard_mount": ("monture", "Parquer la monture si elle est deparquee alors que le toit est ferme, et arreter la fermeture si elle se deparquille en cours."),
     "simulation_mount_parked": ("monture", "Etat de parkage de la monture simulee (mode simulation)."),
     # meteo
@@ -139,7 +139,7 @@ SETTING_INFO = {
     # atelier
     "arduino_cli_path": ("arduino", "Chemin d'arduino-cli. Vide : detection automatique (IDE Arduino, PATH)."),
     "arduino_fqbn": ("arduino", "Carte cible pour la compilation et le televersement."),
-    "arduino_upload_port": ("arduino", "Port de televersement. Vide : utilise serial_port."),
+    "arduino_upload_port": ("arduino", "Port de televersement. Vide : utilise le port serie du toit."),
     "pin_limit_open": ("arduino", "Broche du fin de course d'ouverture."),
     "pin_limit_closed": ("arduino", "Broche du fin de course de fermeture."),
     "pin_bts_rpwm": ("arduino", "Broche RPWM du driver BTS7960 (sens + vitesse)."),

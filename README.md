@@ -27,6 +27,18 @@ La documentation est aussi consultable depuis l'interface :
 
 ---
 
+## Téléchargement
+
+**[ObservatoryServer 3.0.0 alpha](https://github.com/moustickk/ObservatoryServer/releases/tag/v3.0.0-alpha)**
+— installateur Windows, prérequis et empreinte SHA-256 dans les notes de
+version. C'est une version alpha, marquée *pre-release* : elle n'apparaît pas
+dans « Latest ».
+
+Le code est aussi utilisable sans installation, depuis ce dépôt
+(voir [Lancement](#lancement)).
+
+---
+
 ## Sécurité — à lire avant tout
 
 Ces règles sont volontairement strictes. Elles coûtent parfois une nuit, elles

@@ -22,6 +22,16 @@ def test_le_guide_est_rendu_en_html():
     assert "<table>" in document["html"]
 
 
+def test_les_captures_du_readme_sont_retirees():
+
+    document = docs_api.render("guide")
+
+    # Les chemins d'images du depot ne se resolvent pas dans l'application.
+    assert "<img" not in document["html"]
+    assert "docs/screenshots" not in document["html"]
+    assert "Aperçu" not in document["html"]
+
+
 def test_la_recette_est_rendue():
 
     document = docs_api.render("recette")

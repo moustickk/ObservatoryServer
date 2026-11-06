@@ -409,7 +409,7 @@ function fieldElement(item) {
     item.type === "bool" ? String(item.value === true) : String(item.value);
 
   // Le pilote ASCOM est long et partage sa ligne avec le bouton Scanner.
-  if (item.key === "telescope_driver") {
+  if (item.key === "telescope_driver" || item.key === "arduino_fqbn") {
     wrapper.classList.add("span2");
   }
 
