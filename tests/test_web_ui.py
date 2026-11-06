@@ -148,3 +148,16 @@ def test_la_reconnexion_monture_est_branchee():
 
     assert "/api/mount/reconnect" in routes
     assert "/api/mount/reconnect" in js
+
+
+def test_les_onglets_separent_les_domaines():
+    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+
+    for tab in ("accueil", "meteo", "monture", "arduino", "systeme"):
+        assert f'data-tab="{tab}"' in html, tab
+
+    for group in ("toit", "meteo", "monture", "arduino", "general"):
+        assert f'data-settings="{group}"' in html, group
+
+    # Plus de formulaire unique : chaque domaine porte ses reglages.
+    assert "config-form" not in html

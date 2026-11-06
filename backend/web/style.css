@@ -87,12 +87,76 @@ h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
 #override-hint { margin: 6px 0 0; color: #f0c674; }
 
 main {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  align-items: start;
-  gap: 18px;
+  display: block;
+  max-width: 1500px;
+  margin: 0 auto;
   padding: 20px 24px 40px;
 }
+.panel { display: none; }
+.panel.active { display: block; }
+.panel > .card + .card { margin-top: 18px; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* -- onglets ------------------------------------------------------------ */
+
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 12px 18px;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--blue);
+}
+.tab:focus { outline: none; }
+.tab:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+
+.settings[data-settings="toit"] { --accent: var(--blue); }
+.settings[data-settings="meteo"] { --accent: var(--green); }
+.settings[data-settings="monture"] { --accent: #a371f7; }
+.settings[data-settings="arduino"] { --accent: #39c5cf; }
+.settings[data-settings="general"] { --accent: var(--grey); }
+
+.field.span2 { grid-column: span 2; }
+
+.banner-error { margin: 16px 24px 0; }
+
+.settings { margin-top: 18px; }
+.settings-body { display: grid; gap: 14px; }
+
+#mount-badge.parked { background: var(--green); }
+#mount-badge.unparked { background: var(--amber); }
+#mount-badge.unknown { background: var(--red); }
 
 .card {
   --accent: var(--grey);
@@ -109,6 +173,7 @@ main {
 .card.dome { --accent: var(--blue); }
 .card.weather { --accent: var(--green); }
 .card.weather.unsafe { --accent: var(--red); }
+.card.mount { --accent: #a371f7; }
 .card.arduino { --accent: #39c5cf; }
 .card.config { --accent: #a371f7; }
 

@@ -129,6 +129,22 @@ function renderDome(dome, agentEnabled) {
 
   $("mount").textContent = mountText;
 
+  const badgeMount = $("mount-badge");
+
+  if (mount.at_park === true) {
+    badgeMount.textContent = "parquée";
+    badgeMount.className = "badge parked";
+  } else if (mount.at_park === false) {
+    badgeMount.textContent = "non parquée";
+    badgeMount.className = "badge unparked";
+  } else {
+    badgeMount.textContent = "inconnue";
+    badgeMount.className = "badge unknown";
+  }
+
+  $("mount-driver").textContent = mount.description || "—";
+  $("mount-error").textContent = mountIssue || "—";
+
   const alarm = dome.alarm;
   if (alarm) {
     show($("alarm"), `${alarm.code} — ${alarm.message} (depuis ${alarm.since})`);
@@ -194,6 +210,13 @@ function renderWeather(status) {
 
   // La carte entière change de couleur : l'alerte se voit sans lire.
   $("weather-card").classList.toggle("unsafe", !safe);
+  $("summary-card").classList.toggle("unsafe", !safe);
+
+  const summaryBadge = $("summary-safe");
+  summaryBadge.textContent = safe ? "SAFE" : "UNSAFE";
+  summaryBadge.className = `badge ${safe ? "safe" : "unsafe"}`;
+
+  $("summary-status").textContent = status.status || "—";
 
   $("weather-status").textContent = status.status || "—";
 
@@ -205,6 +228,11 @@ function renderWeather(status) {
   $("w-mm").textContent = number(weather.rain_mm, "mm");
   $("w-clouds").textContent = number(weather.clouds, "%");
   $("w-temp").textContent = number(weather.temperature, "°C");
+
+  $("summary-wind").textContent = number(weather.wind, "km/h");
+  $("summary-rain").textContent = number(weather.rain_probability, "%");
+  $("summary-clouds").textContent = number(weather.clouds, "%");
+  $("summary-temp").textContent = number(weather.temperature, "°C");
 
   const age = status.data_age_minutes;
   $("w-age").textContent =
@@ -271,7 +299,10 @@ async function refresh() {
 
     renderHeader(health.data);
     renderDome(health.data.dome || {}, (health.data.safety || {}).agent_enabled);
-    $("agent-state").textContent = agentLabel(health.data.safety || {});
+
+    const agentText = agentLabel(health.data.safety || {});
+    $("agent-state").textContent = agentText;
+    $("summary-agent").textContent = agentText;
 
     const safety = await api("/api/safety/status");
     if (safety.ok) {
@@ -376,6 +407,11 @@ function fieldElement(item) {
   input.dataset.initial =
     item.type === "bool" ? String(item.value === true) : String(item.value);
 
+  // Le pilote ASCOM est long et partage sa ligne avec le bouton Scanner.
+  if (item.key === "telescope_driver") {
+    wrapper.classList.add("span2");
+  }
+
   // Identifiants Alpaca : visibles et copiables, mais pas modifiables.
   // Les changer ferait apparaitre un second appareil dans NINA.
   if (item.read_only) {
@@ -395,8 +431,15 @@ function fieldElement(item) {
 function renderConfig(data) {
   schema = data;
 
-  const form = $("config-form");
-  form.replaceChildren();
+  const targets = {};
+
+  for (const section of document.querySelectorAll("[data-settings]")) {
+    const body = section.querySelector(".settings-body");
+    if (body) {
+      body.replaceChildren();
+      targets[section.dataset.settings] = body;
+    }
+  }
 
   const byGroup = new Map();
   for (const item of data.settings) {
@@ -406,25 +449,20 @@ function renderConfig(data) {
     byGroup.get(item.group).push(item);
   }
 
-  const ordered = (data.groups || []).filter((group) => byGroup.has(group));
-
-  for (const group of ordered) {
-    const fieldset = document.createElement("fieldset");
-    fieldset.style.setProperty("--group-color", GROUP_COLORS[group] || "#8b9bab");
-
-    const legend = document.createElement("legend");
-    legend.textContent = GROUP_LABELS[group] || group;
-    fieldset.append(legend);
+  for (const group of data.groups || []) {
+    const target = targets[group];
+    if (!target) {
+      continue;
+    }
 
     const fields = document.createElement("div");
     fields.className = "fields";
 
-    for (const item of byGroup.get(group)) {
+    for (const item of byGroup.get(group) || []) {
       fields.append(fieldElement(item));
     }
 
-    fieldset.append(fields);
-    form.append(fieldset);
+    target.append(fields);
   }
 }
 
@@ -503,7 +541,7 @@ async function saveConfig() {
   hide($("config-error"));
   hide($("config-restart"));
 
-  const inputs = $("config-form").querySelectorAll("input, select");
+  const inputs = document.querySelectorAll("[data-settings] input, [data-settings] select");
   const errors = [];
   let changed = 0;
 
@@ -1028,8 +1066,44 @@ $("btn-reconnect").addEventListener("click", async () => {
   refresh();
 });
 
-$("btn-save").addEventListener("click", saveConfig);
-$("btn-reload").addEventListener("click", loadConfig);
+// -- onglets -------------------------------------------------------------
+
+const TABS = ["accueil", "meteo", "monture", "arduino", "systeme"];
+
+function showTab(name) {
+  if (!TABS.includes(name)) {
+    name = "accueil";
+  }
+
+  for (const panel of document.querySelectorAll(".panel")) {
+    panel.classList.toggle("active", panel.id === `panel-${name}`);
+  }
+
+  for (const tab of document.querySelectorAll(".tab")) {
+    tab.classList.toggle("active", tab.dataset.tab === name);
+  }
+
+  if (window.location.hash !== `#${name}`) {
+    history.replaceState(null, "", `#${name}`);
+  }
+}
+
+for (const tab of document.querySelectorAll(".tab")) {
+  tab.addEventListener("click", () => showTab(tab.dataset.tab));
+}
+
+for (const button of document.querySelectorAll("[data-goto]")) {
+  button.addEventListener("click", () => showTab(button.dataset.goto));
+}
+
+for (const button of document.querySelectorAll("[data-action='save']")) {
+  button.addEventListener("click", saveConfig);
+}
+
+for (const button of document.querySelectorAll("[data-action='reload']")) {
+  button.addEventListener("click", loadConfig);
+}
+
 $("btn-restart").addEventListener("click", restartServer);
 
 $("arduino-compile").addEventListener("click", () => startArduino("compile"));
@@ -1042,9 +1116,13 @@ loadTrayIcon();
 refresh();
 setInterval(refresh, POLL_MS);
 
-// Lien direct vers les journaux : /ui/#logs (utile au support et aux tests).
-if (window.location.hash === "#logs") {
+// Onglet initial : hash de l'URL, sinon Accueil.
+const initial = window.location.hash.replace("#", "");
+
+showTab(TABS.includes(initial) ? initial : "accueil");
+
+if (initial === "logs") {
   openLogs();
-} else if (window.location.hash === "#docs") {
+} else if (initial === "docs") {
   openDocs();
 }

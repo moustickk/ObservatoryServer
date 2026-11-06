@@ -22,126 +22,259 @@
     </div>
   </header>
 
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab" data-tab="accueil">Accueil</button>
+    <button class="tab" data-tab="meteo">Météo</button>
+    <button class="tab" data-tab="monture">Monture</button>
+    <button class="tab" data-tab="arduino">Arduino</button>
+    <button class="tab" data-tab="systeme">Système</button>
+  </nav>
+
   <div id="alarm" class="alarm hidden" role="alert"></div>
   <div id="override-banner" class="forced hidden" role="status"></div>
   <div id="notice" class="notice hidden" role="status"></div>
+  <p id="config-error" class="error hidden banner-error"></p>
+  <p id="config-restart" class="notice hidden">Réglages enregistrés. Un redémarrage du serveur est nécessaire pour qu'ils prennent effet.</p>
 
   <main>
 
-    <section class="card dome" id="dome-card">
-      <div class="card-head">
-        <h2>Toit</h2>
-        <span id="state" class="badge">…</span>
+    <!-- ---------------------------------------------------------- Accueil -->
+    <section class="panel" id="panel-accueil">
+
+      <div class="grid-2">
+
+        <section class="card dome" id="dome-card">
+          <div class="card-head">
+            <h2>Toit</h2>
+            <span id="state" class="badge">…</span>
+          </div>
+
+          <div class="position">
+            <div class="bar"><div id="position-fill"></div></div>
+            <span id="position-text">—</span>
+          </div>
+
+          <dl class="facts">
+            <div><dt>Liaison</dt><dd id="dome-link">—</dd></div>
+            <div><dt>Monture</dt><dd id="mount">—</dd></div>
+          </dl>
+
+          <div class="actions">
+            <button id="btn-open" class="primary">Ouvrir</button>
+            <button id="btn-stop" class="warn">Arrêter</button>
+            <button id="btn-close" class="success">Fermer</button>
+          </div>
+
+          <p id="action-error" class="error hidden"></p>
+        </section>
+
+        <section class="card weather" id="summary-card">
+          <div class="card-head">
+            <h2>Sécurité</h2>
+            <span id="summary-safe" class="badge">…</span>
+          </div>
+
+          <p id="summary-status" class="status-line">—</p>
+
+          <dl class="grid">
+            <div><dt>Vent</dt><dd id="summary-wind">—</dd></div>
+            <div><dt>Pluie</dt><dd id="summary-rain">—</dd></div>
+            <div><dt>Nuages</dt><dd id="summary-clouds">—</dd></div>
+            <div><dt>Temp.</dt><dd id="summary-temp">—</dd></div>
+          </dl>
+
+          <p class="hint" id="summary-agent">—</p>
+
+          <div class="actions">
+            <button class="ghost small" data-goto="meteo">Voir la météo détaillée</button>
+          </div>
+        </section>
+
       </div>
 
-      <div class="position">
-        <div class="bar"><div id="position-fill"></div></div>
-        <span id="position-text">—</span>
-      </div>
-
-      <dl class="facts">
-        <div><dt>Liaison</dt><dd id="dome-link">—</dd></div>
-        <div><dt>Monture</dt><dd id="mount">—</dd></div>
-      </dl>
-
-      <div class="actions">
-        <button id="btn-open" class="primary">Ouvrir</button>
-        <button id="btn-stop" class="warn">Arrêter</button>
-        <button id="btn-close" class="success">Fermer</button>
-        <button id="btn-park" class="ghost">Parquer la monture</button>
-        <button id="btn-reconnect" class="ghost">Reconnecter</button>
-      </div>
-
-      <p id="action-error" class="error hidden"></p>
-    </section>
-
-    <section class="card weather" id="weather-card">
-      <div class="card-head">
-        <h2>Sécurité météo</h2>
-        <span id="safe" class="badge">…</span>
-      </div>
-
-      <p id="weather-status" class="status-line">—</p>
-
-      <dl class="grid">
-        <div><dt>Vent</dt><dd id="w-wind">—</dd></div>
-        <div><dt>Rafales</dt><dd id="w-gust">—</dd></div>
-        <div><dt>Pluie</dt><dd id="w-rain">—</dd></div>
-        <div><dt>Cumul</dt><dd id="w-mm">—</dd></div>
-        <div><dt>Nuages</dt><dd id="w-clouds">—</dd></div>
-        <div><dt>Température</dt><dd id="w-temp">—</dd></div>
-        <div><dt>Âge mesure</dt><dd id="w-age">—</dd></div>
-        <div><dt>Dernière</dt><dd id="w-last">—</dd></div>
-      </dl>
-
-      <p class="hint" id="agent-state">Agent de sauvegarde : —</p>
-
-      <div class="override-row">
-        <span class="hint">Météo simulée :</span>
-        <button class="ghost small" data-force="auto">Réel</button>
-        <button class="ghost small" data-force="SAFE">SAFE</button>
-        <button class="warn small" data-force="UNSAFE">UNSAFE</button>
-      </div>
-      <p id="override-hint" class="hint"></p>
-    </section>
-
-    <section class="card wide arduino" id="arduino-card">
-      <div class="card-head">
-        <h2>Atelier Arduino</h2>
-        <span id="arduino-state" class="tag">…</span>
-      </div>
-
-      <p id="arduino-toolchain" class="hint">Chargement de l'outillage…</p>
-
-      <div class="actions">
-        <select id="arduino-fqbn" aria-label="Carte cible"></select>
-        <select id="arduino-port" aria-label="Port de téléversement"></select>
-        <button id="arduino-compile" class="ghost">Compiler</button>
-        <button id="arduino-upload" class="warn">Téléverser</button>
-      </div>
-
-      <p class="hint">
-        Le téléversement suspend la liaison série, coupe le moteur et redémarre
-        l'Arduino. Le toit doit être immobile.
-      </p>
-
-      <p id="arduino-error" class="error hidden"></p>
-      <pre id="arduino-output" class="console">—</pre>
-    </section>
-
-    <section class="card wide config" id="config-card">
-      <div class="card-head">
-        <h2>Configuration</h2>
-        <div class="config-actions">
-          <button id="btn-reload" class="ghost">Recharger</button>
-          <button id="btn-save" class="primary">Enregistrer</button>
-          <button id="btn-restart" class="warn">Redémarrer</button>
+      <section class="card wide settings" data-settings="toit">
+        <div class="card-head">
+          <h2>Réglages du toit</h2>
+          <div class="config-actions">
+            <button class="ghost small" data-action="reload">Recharger</button>
+            <button class="primary small" data-action="save">Enregistrer</button>
+          </div>
         </div>
-      </div>
+        <div class="settings-body"></div>
+      </section>
 
-      <p id="config-error" class="error hidden"></p>
-      <p id="config-restart" class="notice hidden">
-        Réglages enregistrés. Un redémarrage du serveur est nécessaire pour
-        qu'ils prennent effet.
-      </p>
+    </section>
 
-      <div class="system-row">
-        <label class="follow">
-          <input type="checkbox" id="autostart">
-          Démarrer à l'ouverture de Windows
-        </label>
-        <span id="autostart-hint" class="hint">—</span>
-      </div>
+    <!-- ------------------------------------------------------------ Météo -->
+    <section class="panel" id="panel-meteo">
 
-      <div class="system-row">
-        <label class="follow">
-          <input type="checkbox" id="tray-promote">
-          Afficher l'icône près de l'horloge
-        </label>
-        <span id="tray-hint" class="hint">—</span>
-      </div>
+      <section class="card weather" id="weather-card">
+        <div class="card-head">
+          <h2>Sécurité météo</h2>
+          <span id="safe" class="badge">…</span>
+        </div>
 
-      <form id="config-form" autocomplete="off"><!-- rempli par app.js --></form>
+        <p id="weather-status" class="status-line">—</p>
+
+        <dl class="grid">
+          <div><dt>Vent</dt><dd id="w-wind">—</dd></div>
+          <div><dt>Rafales</dt><dd id="w-gust">—</dd></div>
+          <div><dt>Pluie</dt><dd id="w-rain">—</dd></div>
+          <div><dt>Cumul</dt><dd id="w-mm">—</dd></div>
+          <div><dt>Nuages</dt><dd id="w-clouds">—</dd></div>
+          <div><dt>Température</dt><dd id="w-temp">—</dd></div>
+          <div><dt>Âge mesure</dt><dd id="w-age">—</dd></div>
+          <div><dt>Dernière</dt><dd id="w-last">—</dd></div>
+        </dl>
+
+        <p class="hint" id="agent-state">Agent de sauvegarde : —</p>
+
+        <div class="override-row">
+          <span class="hint">Météo simulée :</span>
+          <button class="ghost small" data-force="auto">Réel</button>
+          <button class="ghost small" data-force="SAFE">SAFE</button>
+          <button class="warn small" data-force="UNSAFE">UNSAFE</button>
+        </div>
+        <p id="override-hint" class="hint"></p>
+      </section>
+
+      <section class="card wide settings" data-settings="meteo">
+        <div class="card-head">
+          <h2>Réglages météo</h2>
+          <div class="config-actions">
+            <button class="ghost small" data-action="reload">Recharger</button>
+            <button class="primary small" data-action="save">Enregistrer</button>
+          </div>
+        </div>
+        <div class="settings-body"></div>
+      </section>
+
+    </section>
+
+    <!-- ---------------------------------------------------------- Monture -->
+    <section class="panel" id="panel-monture">
+
+      <section class="card mount" id="mount-card">
+        <div class="card-head">
+          <h2>Monture</h2>
+          <span id="mount-badge" class="badge">…</span>
+        </div>
+
+        <dl class="facts">
+          <div><dt>Driver</dt><dd id="mount-driver">—</dd></div>
+          <div><dt>Dernière erreur</dt><dd id="mount-error">—</dd></div>
+        </dl>
+
+        <p class="hint">
+          Le toit ne bouge jamais si la monture n'est pas parquée. En cas de
+          perte de liaison, « Reconnecter » ferme la session ASCOM et en ouvre
+          une neuve — le driver peut être redémarré au besoin.
+        </p>
+
+        <div class="actions">
+          <button id="btn-park" class="ghost">Parquer la monture</button>
+          <button id="btn-reconnect" class="ghost">Reconnecter</button>
+        </div>
+      </section>
+
+      <section class="card wide settings" data-settings="monture">
+        <div class="card-head">
+          <h2>Réglages monture</h2>
+          <div class="config-actions">
+            <button class="ghost small" data-action="reload">Recharger</button>
+            <button class="primary small" data-action="save">Enregistrer</button>
+          </div>
+        </div>
+        <div class="settings-body"></div>
+      </section>
+
+    </section>
+
+    <!-- ---------------------------------------------------------- Arduino -->
+    <section class="panel" id="panel-arduino">
+
+      <section class="card wide arduino" id="arduino-card">
+        <div class="card-head">
+          <h2>Atelier Arduino</h2>
+          <span id="arduino-state" class="tag">…</span>
+        </div>
+
+        <p id="arduino-toolchain" class="hint">Chargement de l'outillage…</p>
+
+        <div class="actions">
+          <select id="arduino-fqbn" aria-label="Carte cible"></select>
+          <select id="arduino-port" aria-label="Port de téléversement"></select>
+          <button id="arduino-compile" class="ghost">Compiler</button>
+          <button id="arduino-upload" class="warn">Téléverser</button>
+        </div>
+
+        <p class="hint">
+          Le téléversement suspend la liaison série, coupe le moteur et
+          redémarre l'Arduino. Le toit doit être immobile.
+        </p>
+
+        <p id="arduino-error" class="error hidden"></p>
+        <pre id="arduino-output" class="console">—</pre>
+      </section>
+
+      <section class="card wide settings" data-settings="arduino">
+        <div class="card-head">
+          <h2>Réglages Arduino</h2>
+          <div class="config-actions">
+            <button class="ghost small" data-action="reload">Recharger</button>
+            <button class="primary small" data-action="save">Enregistrer</button>
+          </div>
+        </div>
+        <div class="settings-body"></div>
+      </section>
+
+    </section>
+
+    <!-- ---------------------------------------------------------- Système -->
+    <section class="panel" id="panel-systeme">
+
+      <section class="card system" id="system-card">
+        <div class="card-head">
+          <h2>Système</h2>
+          <span id="footer-version" class="tag muted">—</span>
+        </div>
+
+        <div class="system-row">
+          <label class="follow">
+            <input type="checkbox" id="autostart">
+            Démarrer à l'ouverture de Windows
+          </label>
+          <span id="autostart-hint" class="hint">—</span>
+        </div>
+
+        <div class="system-row">
+          <label class="follow">
+            <input type="checkbox" id="tray-promote">
+            Afficher l'icône près de l'horloge
+          </label>
+          <span id="tray-hint" class="hint">—</span>
+        </div>
+
+        <div class="actions">
+          <button id="btn-restart" class="warn">Redémarrer le serveur</button>
+        </div>
+        <p class="hint">
+          Un redémarrage applique les réglages et relance la liaison série.
+          Il est refusé si le toit est en mouvement.
+        </p>
+      </section>
+
+      <section class="card wide settings" data-settings="general">
+        <div class="card-head">
+          <h2>Réglages généraux</h2>
+          <div class="config-actions">
+            <button class="ghost small" data-action="reload">Recharger</button>
+            <button class="primary small" data-action="save">Enregistrer</button>
+          </div>
+        </div>
+        <div class="settings-body"></div>
+      </section>
+
     </section>
 
   </main>
@@ -150,8 +283,19 @@
     <a href="/docs" target="_blank" rel="noreferrer">API</a>
     <a href="/api/health" target="_blank" rel="noreferrer">/api/health</a>
     <a href="/management/v1/configureddevices" target="_blank" rel="noreferrer">Alpaca</a>
-    <span id="footer-version" class="muted"></span>
+    <span class="muted" id="footer-info"></span>
   </footer>
+
+  <dialog id="docs-dialog">
+    <div class="dialog-head">
+      <h2>Documentation</h2>
+      <div class="dialog-actions">
+        <select id="docs-select" aria-label="Document"></select>
+        <button id="docs-close" class="ghost small">Fermer</button>
+      </div>
+    </div>
+    <div id="docs-content" class="doc-body">Chargement…</div>
+  </dialog>
 
   <dialog id="logs-dialog">
     <div class="dialog-head">
@@ -174,17 +318,6 @@
     </div>
     <pre id="logs-content">Chargement…</pre>
     <p id="logs-meta" class="hint"></p>
-  </dialog>
-
-  <dialog id="docs-dialog">
-    <div class="dialog-head">
-      <h2>Documentation</h2>
-      <div class="dialog-actions">
-        <select id="docs-select" aria-label="Document"></select>
-        <button id="docs-close" class="ghost small">Fermer</button>
-      </div>
-    </div>
-    <div id="docs-content" class="doc-body">Chargement…</div>
   </dialog>
 
   <script src="app.js"></script>

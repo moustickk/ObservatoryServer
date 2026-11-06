@@ -11,7 +11,11 @@ toit se ferme même si NINA est absent, dès que la météo devient dangereuse.
 
 ## Aperçu
 
-![Interface](docs/screenshots/interface.png)
+![Accueil](docs/screenshots/interface.png)
+
+| Météo | Monture |
+|---|---|
+| ![Météo](docs/screenshots/meteo.png) | ![Monture](docs/screenshots/monture.png) |
 
 | Journaux | Atelier Arduino |
 |---|---|
@@ -103,12 +107,20 @@ quitter.
 
 **`http://localhost:11111/ui/`**
 
-| Section | Contenu |
+Cinq onglets, avec les réglages rangés dans leur domaine :
+
+| Onglet | Contenu |
 |---|---|
-| **Toit** | état, position estimée, liaison série, monture, boutons Ouvrir / Arrêter / Fermer / Parquer |
-| **Sécurité météo** | verdict SAFE/UNSAFE, vent, rafales, pluie, cumul, nuages, température, âge de la mesure |
-| **Atelier Arduino** | compilation et téléversement du firmware |
-| **Configuration** | les réglages, groupés par domaine |
+| **Accueil** | les deux cadres principaux : état du **Toit** et verdict de **Sécurité**, avec les boutons de commande |
+| **Météo** | mesures détaillées, décision, forçage Réel/SAFE/UNSAFE, réglages des seuils |
+| **Monture** | driver, parkage, erreur, Parquer / Reconnecter, réglages et protection |
+| **Arduino** | atelier de compilation/téléversement, brochage et temporisations du firmware |
+| **Système** | démarrage Windows, icône, réglages généraux, redémarrage du serveur |
+
+Les boutons **Journaux** et **Documentation** restent dans la barre du haut :
+ce sont des consultations, pas des espaces de travail. L'onglet actif est
+mémorisé dans l'URL (`#meteo`, `#monture`…), donc un rechargement ne le perd
+pas.
 
 L'agent réagit **immédiatement** à un changement de verdict (météo réelle ou
 forçage) : il n'attend pas un cycle de surveillance. S'il doit parquer la
@@ -123,7 +135,7 @@ NINA sans attendre la pluie. Le forçage est signalé par un bandeau, répercut�
 dans Alpaca, et **expire tout seul** : impossible de l'oublier et de laisser
 le toit ouvert (ou fermé) pour de bon.
 
-Chaque section a sa couleur ; la carte météo passe au rouge quand le verdict
+Chaque onglet a sa couleur ; la carte météo passe au rouge quand le verdict
 est UNSAFE. Le bouton **Documentation** ouvre le guide, la recette et la
 documentation du firmware directement dans le navigateur ; le bouton
 **Journaux** affiche les quatre journaux avec suivi automatique.
@@ -139,9 +151,11 @@ avant de fermer le toit.
 
 ### Configuration
 
-Les réglages sont validés et typés côté serveur. Un réglage inconnu répond 404,
-une valeur invalide 400 avec le motif. **La plupart ne s'appliquent qu'au
-redémarrage** : utiliser le bouton Redémarrer après Enregistrer.
+Chaque onglet porte ses propres réglages, repliés en bas de page, avec son
+propre bouton **Enregistrer**. Les valeurs sont validées et typées côté
+serveur : un réglage inconnu répond 404, une valeur invalide 400 avec le
+motif. **La plupart ne s'appliquent qu'au redémarrage** : utiliser le bouton
+Redémarrer de l'onglet Système après Enregistrer.
 
 Les identifiants Alpaca (`dome_unique_id`, `safety_unique_id`) sont en lecture
 seule : les changer créerait un appareil en double dans NINA.
