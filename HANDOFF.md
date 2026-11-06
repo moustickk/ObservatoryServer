@@ -46,17 +46,20 @@ Serveur de pilotage d'un observatoire à **toit roulant**, commandé par
 ## Commits
 
 ```
-badf019 Phase 6 : journalisation en ajout, verrou par fichier, purge horaire
-a166c1c Phase 5 : meteo fail-safe, rafales et pire cas de la fenetre
-7c930bb Phase 4 : threads dedies serie et COM, grace de parkage, agent de sauvegarde
-e23f9c6 Reglages reels mesures sur le toit et securite firmware a 50 s
-8f4d42e Phase 3 : firmware robuste et protocole serie strict
-201d2ad Conformite Alpaca : proprietes manquantes et management sans version
-9a41afe Compatibilite Python 3.15 et document de reprise
-ddfc9d5 Phase 2 : couche ASCOM Alpaca (Dome + SafetyMonitor + decouverte)
-3644058 Phase 1 : demarrage sans materiel, config validee, interlock monture
-c291117 Sauvegarde initiale avant refonte v3 (etat d'origine)
+7c6af07 Brochage Arduino : listes par usage et refus a la compilation
+3c549a4 Interface : libelles francais pour les reglages et leurs valeurs
+47f2dd7 Interface : confirmation avant de desactiver une protection
+6b4b449 Interface : navigation par onglets, reglages par domaine
+2fbc256 README : apercu de l'interface et captures
+7bed236 Protection monture : toit ferme + monture deparquee
+98719b0 Reconnexion de la monture apres perte de liaison
+9fe0624 HANDOFF : monture reelle validee (agent en moins d'une seconde)
+cda6f31 Agent reveille immediatement et etat visible dans l'interface
+58f5a34 Meteo forcee depuis l'interface, limitee dans le temps
 ```
+
+L'historique complet est dans `git log` ; cette liste ne sert qu'à situer les
+dernières étapes.
 
 ## Décisions structurantes
 
@@ -266,6 +269,27 @@ déclaré illisible et remplacé par les valeurs par défaut, donc en simulation
 La lecture tolère désormais le BOM (`utf-8-sig`), pour la configuration comme
 pour l'état persistant.
 
+### Publication GitHub
+
+Dépôt public : <https://github.com/moustickk/ObservatoryServer>
+
+Release `v3.0.0-alpha`, marquée **pre-release** (donc invisible dans
+`/releases/latest`) :
+
+- l'asset `ObservatoryServer-Setup-3.0.0.exe` est reconstruit à chaque
+  changement visible : le remplacer, pas seulement le tag ;
+- le tag pointe sur le commit publié — il est déplacé en force pour que les
+  archives source correspondent au binaire ;
+- l'empreinte SHA-256 de l'installateur est reportée dans les notes de release
+  et doit être recalculée après chaque envoi.
+
+Rafraîchir la release : reconstruire (`packaging\build.cmd`, puis
+`packaging\build_installer.cmd`), mettre à jour le corps de la release via
+l'API, supprimer l'ancien asset puis envoyer le nouveau. Le corps JSON doit
+être encodé **UTF-8** (`[Text.Encoding]::UTF8.GetBytes`), sinon l'API répond
+« Problems parsing JSON ». Vérifier ensuite en téléchargeant l'asset et en
+comparant le SHA-256.
+
 ## Architecture
 
 ```
@@ -343,10 +367,10 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **111 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **174 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
-  schéma de configuration, interface web). Lancer avec
-  `.\\.venv\\Scripts\\python.exe -m pytest`.
+  schéma de configuration, brochage, interface web, documentation).
+  Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.
 - Journaux consultables depuis l'interface : `GET /api/logs` et
   `GET /api/logs/{nom}?lines=N`. Seuls quatre noms sont acceptés (pas de
   traversée de chemin), et la lecture se fait par blocs depuis la fin, bornée
@@ -377,7 +401,7 @@ tests/
 - **Atelier Arduino vérifié en réel** : compilation du croquis avec la
   configuration générée (4 484 octets de flash, 345 de RAM), téléversement
   sur COM4 depuis l'application installée (liaison suspendue puis reprise),
-  contrôleur de nouveau joignable après redémarrage. 123 tests pytest.
+  contrôleur de nouveau joignable après redémarrage.
 - **Installateur Inno Setup** vérifié : installation silencieuse, lancement
   de l'app installée (interface + journaux), désinstallation, conservation
   des données. 21,7 Mo, compilation sans avertissement.
