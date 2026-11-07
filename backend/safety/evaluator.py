@@ -8,14 +8,7 @@ Les valeurs venant du fournisseur sont deja des « pire cas » sur la fenetre
 de prevision (voir `weather_provider`) : ici on ne fait que comparer.
 """
 
-from backend.safety.config import (
-    MAX_CLOUD_COVER,
-    MAX_RAIN_MM,
-    MAX_RAIN_PROBABILITY,
-    MAX_WIND_GUST,
-    MAX_WIND_SPEED,
-    MIN_TEMPERATURE,
-)
+from backend.safety.config import current
 
 
 def _number(weather, key):
@@ -25,7 +18,14 @@ def _number(weather, key):
         return 0.0
 
 
-def evaluate_weather(weather):
+def evaluate_weather(weather, settings=None):
+    """Compare une mesure aux seuils courants.
+
+    `settings` permet aux tests de fixer les seuils ; par defaut, ils sont
+    relus a chaque appel (application immediate, sans redemarrage).
+    """
+
+    settings = settings or current()
 
     reasons = []
 
@@ -37,22 +37,22 @@ def evaluate_weather(weather):
     temperature = _number(weather, "temperature")
     forecast_temperature = _number(weather, "forecast_temperature")
 
-    if wind > MAX_WIND_SPEED:
+    if wind > settings.max_wind_speed:
         reasons.append(f"VENT ({wind:g} km/h)")
 
-    if gust > MAX_WIND_GUST:
+    if gust > settings.max_wind_gust:
         reasons.append(f"RAFALES ({gust:g} km/h)")
 
-    if rain_probability > MAX_RAIN_PROBABILITY:
+    if rain_probability > settings.max_rain_probability:
         reasons.append(f"PLUIE ({rain_probability:g}%)")
 
-    if rain_mm > MAX_RAIN_MM:
+    if rain_mm > settings.max_rain_mm:
         reasons.append(f"PLUIE ({rain_mm:g} mm)")
 
-    if clouds > MAX_CLOUD_COVER:
+    if clouds > settings.max_cloud_cover:
         reasons.append(f"NUAGES ({clouds:g}%)")
 
-    if temperature <= MIN_TEMPERATURE or forecast_temperature <= MIN_TEMPERATURE:
+    if temperature <= settings.min_temperature or forecast_temperature <= settings.min_temperature:
         reasons.append("RISQUE GEL")
 
     return (len(reasons) == 0, reasons)

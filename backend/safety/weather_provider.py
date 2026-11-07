@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
-from backend.safety.config import LAT, LON, LOOKAHEAD_HOURS, WEATHER_MODEL
+from backend.safety.config import LAT, LON, current
 
 
 TIME_FORMAT = "%Y-%m-%dT%H:%M"
@@ -50,20 +50,17 @@ BASE_URL = (
 def build_url(model=None):
     """URL Open-Meteo pour un modele donne.
 
-    « best_match » est le comportement par defaut du fournisseur : on ne
-    l'ajoute pas, pour garder la requete minimale. Les autres modeles sont
-    demandes explicitement.
+    Le modele est relu a chaque appel : changer le selecteur de l'interface
+    prend effet au telechargement suivant, sans redemarrage.
     """
 
-    model = model or WEATHER_MODEL
+    if model is None:
+        model = current().model
 
     if model and model != "best_match":
         return f"{BASE_URL}&models={model}"
 
     return BASE_URL
-
-
-URL = build_url()
 
 
 def local_now(data):
@@ -88,7 +85,7 @@ def _parse_time(value):
         return None
 
 
-def parse_weather(data, now=None):
+def parse_weather(data, now=None, settings=None):
     """Transforme une reponse Open-Meteo en mesures « pire cas ».
 
     Leve `ValueError` si la reponse est inexploitable : mieux vaut une erreur
@@ -102,9 +99,11 @@ def parse_weather(data, now=None):
     if data.get("error"):
         raise ValueError(data.get("reason") or "erreur Open-Meteo")
 
+    settings = settings or current()
+
     now = now or local_now(data)
 
-    current = data.get("current") or {}
+    current_values = data.get("current") or {}
     hourly = data.get("hourly") or {}
 
     times = hourly.get("time") or []
@@ -114,7 +113,7 @@ def parse_weather(data, now=None):
     parsed = [_parse_time(value) for value in times]
 
     start = now.replace(minute=0, second=0, microsecond=0)
-    end = start + timedelta(hours=LOOKAHEAD_HOURS)
+    end = start + timedelta(hours=settings.lookahead_hours)
 
     window = [
         index
@@ -163,30 +162,31 @@ def parse_weather(data, now=None):
 
     wind_gust = max(
         hourly_gust,
-        current.get("wind_gusts_10m") or 0,
+        current_values.get("wind_gusts_10m") or 0,
     )
 
     return {
-        "wind": current.get("wind_speed_10m", 0) or 0,
+        "wind": current_values.get("wind_speed_10m", 0) or 0,
         "wind_gust": wind_gust,
-        "clouds": current.get("cloud_cover", 0) or 0,
+        "clouds": current_values.get("cloud_cover", 0) or 0,
         "rain_probability": rain_probability,
         "rain_mm": rain_mm,
-        "temperature": current.get("temperature_2m", 0) or 0,
+        "temperature": current_values.get("temperature_2m", 0) or 0,
         "forecast_temperature": forecast_temperature,
-        "window_hours": LOOKAHEAD_HOURS,
+        "window_hours": settings.lookahead_hours,
     }
 
 
 def get_weather():
 
     last_exception = None
+    url = build_url()
 
     for _ in range(3):
 
         try:
 
-            response = requests.get(URL, timeout=10)
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
 
             return parse_weather(response.json())

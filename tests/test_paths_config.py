@@ -232,3 +232,40 @@ def test_le_modele_meteo_est_choisi_dans_une_liste():
     ]
     assert item["choice_labels"]["ecmwf_ifs025"].startswith("ECMWF")
     assert item["choice_labels"]["best_match"].startswith("Automatique")
+
+
+# -- application a chaud -------------------------------------------------
+
+
+def test_les_limites_meteo_s_appliquent_sans_redemarrage():
+    items = {item["key"]: item for item in settings_manager.schema()["settings"]}
+
+    for key in (
+        "max_wind_speed",
+        "max_wind_gust",
+        "max_rain_probability",
+        "max_rain_mm",
+        "max_cloud_cover",
+        "weather_model",
+        "min_temperature",
+        "lookahead_hours",
+        "weather_max_age_minutes",
+        "weather_update_seconds",
+    ):
+        assert items[key]["requires_restart"] is False, key
+
+    # La liaison serie et l'agent sont lus a l'initialisation.
+    assert items["serial_port"]["requires_restart"] is True
+    assert items["safety_agent_enabled"]["requires_restart"] is True
+
+
+def test_lapi_indique_si_un_redemarrage_est_necessaire(monkeypatch, tmp_path):
+    from backend.common.config_update_api import update_config
+
+    monkeypatch.setattr(settings_manager, "SETTINGS_FILE", tmp_path / "settings.json")
+    monkeypatch.setattr(settings_manager, "_settings", None)
+    settings_manager.load_settings()
+
+    assert update_config("max_cloud_cover", "25")["requires_restart"] is False
+    assert update_config("serial_port", "COM9")["requires_restart"] is True
+

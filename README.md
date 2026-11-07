@@ -245,6 +245,11 @@ réponde avant de conclure.
 La valeur `max_travel_time` ne doit **jamais** être inférieure au trajet réel :
 le firmware doit couper avant le serveur, pas l'inverse.
 
+Les **réglages météo** (seuils et modèle) sont relus à chaque évaluation :
+ils s'appliquent immédiatement, sans redémarrage. Les réglages qui touchent
+la liaison série, le pilote monture ou le port du serveur demandent, eux, un
+redémarrage.
+
 ---
 
 ## Mise à jour et désinstallation

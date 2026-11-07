@@ -1,73 +1,87 @@
-from backend.common.config import (
-    get
+"""Configuration meteo, relue a chaque usage.
+
+Les seuils et le modele ne sont plus figes a l'import : `current()` construit
+un instantane depuis `settings_manager` a chaque evaluation ou telechargement.
+Un enregistrement dans l'interface s'applique donc sans redemarrage.
+
+L'instantane est fige (`frozen=True`) : une evaluation ne peut pas voir un
+melange de deux configurations si un reglage change pendant qu'elle tourne.
+"""
+
+import threading
+
+from dataclasses import dataclass
+
+from backend.common.settings_manager import (
+    DEFAULT_SETTINGS,
+    as_dict,
 )
 
 
 LAT = 48.119722
 LON = -1.200556
 
-MAX_WIND_SPEED = get(
-    "max_wind_speed",
-    40.0
-)
 
-MAX_RAIN_PROBABILITY = get(
-    "max_rain_probability",
-    30
-)
+@dataclass(frozen=True)
+class WeatherSettings:
+    """Seuils et parametres meteo, coherents entre eux."""
 
-MAX_RAIN_MM = get(
-    "max_rain_mm",
-    0.1
-)
+    max_wind_speed: float
+    max_wind_gust: float
+    max_rain_probability: float
+    max_rain_mm: float
+    max_cloud_cover: float
+    min_temperature: float
+    lookahead_hours: int
+    max_weather_age_minutes: float
+    cache_timeout_minutes: float
+    update_interval: float
+    model: str
 
-MAX_CLOUD_COVER = get(
-    "max_cloud_cover",
-    80
-)
 
-# Modele Open-Meteo. Les modeles divergent parfois fortement sur les nuages ;
-# le selecteur de l'interface permet de choisir celui qui colle au site.
-WEATHER_MODEL = get(
-    "weather_model",
-    "best_match"
-)
+def _number(data, key):
 
-# Rafales : plus severes que le vent moyen pour la meme valeur. Une rafale
-# peut soulever un toit roulant la ou le vent moyen ne le fait pas.
-MAX_WIND_GUST = get(
-    "max_wind_gust",
-    70.0
-)
+    try:
+        return float(data.get(key, DEFAULT_SETTINGS[key]))
+    except (TypeError, ValueError):
+        return float(DEFAULT_SETTINGS[key])
 
-# Fenetre de prevision prise en compte, en heures. On retient le PIRE cas de
-# la fenetre, pas seulement l'heure suivante : c'est ce qui evite d'ouvrir
-# juste avant une averse annoncee dans deux heures.
-LOOKAHEAD_HOURS = int(
-    get(
-        "lookahead_hours",
-        1
+
+def _integer(data, key):
+
+    try:
+        return int(data.get(key, DEFAULT_SETTINGS[key]))
+    except (TypeError, ValueError):
+        return int(DEFAULT_SETTINGS[key])
+
+
+def current():
+    """Instantane des reglages meteo courants."""
+
+    data = as_dict()
+
+    return WeatherSettings(
+        max_wind_speed=_number(data, "max_wind_speed"),
+        max_wind_gust=_number(data, "max_wind_gust"),
+        max_rain_probability=_number(data, "max_rain_probability"),
+        max_rain_mm=_number(data, "max_rain_mm"),
+        max_cloud_cover=_number(data, "max_cloud_cover"),
+        min_temperature=_number(data, "min_temperature"),
+        lookahead_hours=_integer(data, "lookahead_hours"),
+        max_weather_age_minutes=_number(data, "weather_max_age_minutes"),
+        cache_timeout_minutes=_number(data, "weather_cache_minutes"),
+        update_interval=_number(data, "weather_update_seconds"),
+        model=str(
+            data.get("weather_model")
+            or DEFAULT_SETTINGS["weather_model"]
+        ),
     )
-)
 
-# Age au-dela duquel une mesure meteo n'est plus exploitable. Passe ce delai,
-# la securite est declaree UNSAFE meme si la derniere mesure etait bonne.
-MAX_WEATHER_AGE_MINUTES = get(
-    "weather_max_age_minutes",
-    30
-)
 
-MIN_TEMPERATURE = get(
-    "min_temperature",
-    0.5
-)
+# Reveille la boucle meteo apres un changement de reglage : le nouveau seuil,
+# le nouveau modele ou le nouvel intervalle doit s'appliquer au cycle suivant.
+CHANGED = threading.Event()
 
-CACHE_TIMEOUT_MINUTES = get(
-    "weather_cache_minutes",
-    30
-)
 
-UPDATE_INTERVAL = get(
-    "weather_update_seconds",
-    600
-)
+def notify_changed():
+    CHANGED.set()

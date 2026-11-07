@@ -14,11 +14,8 @@ from datetime import datetime
 
 import pytest
 
-from backend.safety.config import (
-    MAX_WIND_GUST,
-    MAX_WIND_SPEED,
-    MIN_TEMPERATURE,
-)
+from backend.common import settings_manager
+from backend.safety.config import current
 from backend.safety.evaluator import evaluate_weather
 from backend.safety.monitor import failure_decision
 from backend.safety.weather_provider import build_url, parse_weather
@@ -126,7 +123,7 @@ def test_meteo_calme_est_sure():
 
 def test_une_rafale_fait_refuser():
     weather = safe_weather()
-    weather["wind_gust"] = MAX_WIND_GUST + 5
+    weather["wind_gust"] = current().max_wind_gust + 5
 
     safe, reasons = evaluate_weather(weather)
 
@@ -136,7 +133,7 @@ def test_une_rafale_fait_refuser():
 
 def test_un_vent_moyen_fait_refuser():
     weather = safe_weather()
-    weather["wind"] = MAX_WIND_SPEED + 5
+    weather["wind"] = current().max_wind_speed + 5
 
     safe, reasons = evaluate_weather(weather)
 
@@ -146,7 +143,7 @@ def test_un_vent_moyen_fait_refuser():
 
 def test_le_gel_est_detecte_sur_la_fenetre():
     weather = safe_weather()
-    weather["forecast_temperature"] = MIN_TEMPERATURE - 1
+    weather["forecast_temperature"] = current().min_temperature - 1
 
     safe, reasons = evaluate_weather(weather)
 
@@ -188,3 +185,53 @@ def test_une_mesure_recente_mais_dangereuse_reste_dangereuse():
 
     assert safe is False
     assert "PLUIE" in message
+
+
+# -- application a chaud -------------------------------------------------
+
+
+def _isoler_reglages(monkeypatch, tmp_path):
+    monkeypatch.setattr(settings_manager, "SETTINGS_FILE", tmp_path / "settings.json")
+    monkeypatch.setattr(settings_manager, "_settings", None)
+    settings_manager.load_settings()
+
+
+def test_un_seuil_modifie_s_applique_sans_redemarrage(monkeypatch, tmp_path):
+    """Le seuil doit etre relu a chaque evaluation, pas fige a l'import."""
+
+    _isoler_reglages(monkeypatch, tmp_path)
+
+    weather = safe_weather()
+    weather["clouds"] = 50
+
+    assert evaluate_weather(weather)[0] is True
+
+    settings_manager.update_setting("max_cloud_cover", 20)
+
+    safe, reasons = evaluate_weather(weather)
+
+    assert safe is False
+    assert any("NUAGES" in reason for reason in reasons)
+
+
+def test_le_modele_modifie_s_applique_sans_redemarrage(monkeypatch, tmp_path):
+    _isoler_reglages(monkeypatch, tmp_path)
+
+    assert "models=" not in build_url()
+
+    settings_manager.update_setting("weather_model", "ecmwf_ifs025")
+
+    assert "models=ecmwf_ifs025" in build_url()
+
+
+def test_la_fenetre_de_prevision_s_applique_sans_redemarrage(monkeypatch, tmp_path):
+    _isoler_reglages(monkeypatch, tmp_path)
+
+    moment = datetime(2026, 10, 24, 17, 30)
+
+    assert parse_weather(payload(), now=moment)["window_hours"] == 1
+
+    settings_manager.update_setting("lookahead_hours", 3)
+
+    assert parse_weather(payload(), now=moment)["window_hours"] == 3
+

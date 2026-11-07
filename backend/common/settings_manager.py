@@ -301,6 +301,27 @@ SETTING_LABELS = {
 # de configuration a la main.
 READ_ONLY_SETTINGS = ("dome_unique_id", "safety_unique_id")
 
+# Reglages relus a chaque usage : ils prennent effet sans redemarrage.
+# Les autres sont lus a l'initialisation (port, liaison serie, services) et
+# exigent un redemarrage.
+HOT_SETTINGS = frozenset({
+    "max_wind_speed",
+    "max_wind_gust",
+    "max_rain_probability",
+    "max_rain_mm",
+    "max_cloud_cover",
+    "weather_model",
+    "min_temperature",
+    "lookahead_hours",
+    "weather_max_age_minutes",
+    "weather_cache_minutes",
+    "weather_update_seconds",
+})
+
+
+def requires_restart(key):
+    return key not in HOT_SETTINGS
+
 SETTING_GROUPS = ("general", "toit", "monture", "meteo", "arduino")
 
 
@@ -324,8 +345,8 @@ def _type_name(value):
 def schema():
     """Description typee des reglages, avec valeurs courantes.
 
-    `requires_restart` vaut True partout : les modules metier lisent la
-    configuration a l'import. Ce sera affiche tel quel par l'interface.
+    `requires_restart` est vrai pour les reglages lus a l'initialisation et
+    faux pour ceux relus a chaque usage (meteo), qui s'appliquent a chaud.
     """
 
     current = as_dict()
@@ -344,7 +365,7 @@ def schema():
             "default": default,
             "value": current.get(key, default),
             "description": description,
-            "requires_restart": True,
+            "requires_restart": requires_restart(key),
             "read_only": key in READ_ONLY_SETTINGS,
         }
 

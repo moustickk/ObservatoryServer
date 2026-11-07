@@ -8,7 +8,7 @@ confondu avec une mesure reelle.
 """
 
 from backend.safety import state
-from backend.safety.config import WEATHER_MODEL
+from backend.safety.config import current
 
 
 def _base():
@@ -17,7 +17,7 @@ def _base():
         "safe": state.is_safe,
         "status": state.current_status,
         "weather": state.weather_data,
-        "weather_model": WEATHER_MODEL,
+        "weather_model": current().model,
         "data_age_minutes": (
             state.weather_age_minutes()
         ),

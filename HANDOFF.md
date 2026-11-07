@@ -154,6 +154,12 @@ dernières étapes.
   `weather_model` permet de choisir Automatique, ECMWF, Météo-France AROME ou
   ICON ; le modèle actif est affiché dans la carte météo. Le reste de la
   décision (pluie, vent, température) est inchangé.
+- **Seuils météo à chaud.** Les seuils et le modèle sont relus à chaque
+  évaluation et téléchargement : un enregistrement s'applique en quelques
+  secondes. Un événement réveille la boucle météo immédiatement (sinon il
+  aurait fallu attendre le cycle de 10 minutes) ; la mesure en cache est
+  réévaluée avec les nouveaux seuils. Les réglages matériels (port série,
+  pilote monture, port serveur) restent au redémarrage.
 - **Visibilité de l'icône pilotable.** Windows cache les nouvelles icônes
   dans le chevron ; le choix est stocké par icône dans
   `HKCU\Control Panel\NotifyIconSettings` (`IsPromoted`). L'interface lit
@@ -372,7 +378,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **176 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **181 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, brochage, interface web, documentation).
   Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.

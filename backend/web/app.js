@@ -646,6 +646,8 @@ async function saveConfig() {
   const inputs = document.querySelectorAll("[data-settings] input, [data-settings] select");
   const errors = [];
   let changed = 0;
+  let immediate = 0;
+  const late = [];
 
   for (const input of inputs) {
     const value = currentValue(input);
@@ -659,6 +661,16 @@ async function saveConfig() {
 
     if (result.ok) {
       changed += 1;
+
+      if (result.data && result.data.requires_restart) {
+        const label = input
+          .closest(".field")
+          ?.querySelector("label")
+          ?.textContent?.trim();
+        late.push(label || input.dataset.key);
+      } else {
+        immediate += 1;
+      }
     } else {
       const data = result.data || {};
       errors.push(`${input.dataset.key} : ${data.detail || result.status}`);
@@ -666,8 +678,8 @@ async function saveConfig() {
   }
 
   // On recharge d'abord (cela remet les valeurs de reference et efface les
-  // messages), puis on affiche le bilan : sinon le message de redemarrage
-  // serait efface dans la foulee.
+  // messages), puis on affiche le bilan : sinon le message de bilan serait
+  // efface dans la foulee.
   await loadConfig();
 
   if (errors.length) {
@@ -675,9 +687,19 @@ async function saveConfig() {
   }
 
   if (changed) {
+    const parts = [];
+
+    if (immediate) {
+      parts.push(`${immediate} appliqué(s) immédiatement`);
+    }
+
+    if (late.length) {
+      parts.push(`redémarrage nécessaire pour : ${late.join(", ")}`);
+    }
+
     show(
       $("config-restart"),
-      `${changed} réglage(s) enregistré(s). Redémarrage nécessaire pour les appliquer.`,
+      `${changed} réglage(s) enregistré(s) — ${parts.join(" ; ")}.`,
     );
   }
 }

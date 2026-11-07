@@ -17,13 +17,11 @@ Desormais, en cas d'echec :
 """
 
 import logging
+import time
 
 from backend.common.logs import safety_log
 from backend.safety import state
-from backend.safety.config import (
-    MAX_WEATHER_AGE_MINUTES,
-    UPDATE_INTERVAL,
-)
+from backend.safety.config import CHANGED, current
 from backend.safety.engine import process_weather
 from backend.safety.evaluator import evaluate_weather
 from backend.safety.state import set_safe, set_unsafe, weather_age_minutes
@@ -33,12 +31,15 @@ from backend.safety.weather_provider import get_weather
 log = logging.getLogger(__name__)
 
 
-def failure_decision(cached, age_minutes, max_age_minutes=MAX_WEATHER_AGE_MINUTES):
+def failure_decision(cached, age_minutes, max_age_minutes=None):
     """Verdict quand le fournisseur est injoignable.
 
     Retourne `(safe, message)`. Ne retourne jamais `True` sans avoir evalue
     une mesure, et jamais `True` sur une mesure perimee.
     """
+
+    if max_age_minutes is None:
+        max_age_minutes = current().max_weather_age_minutes
 
     if cached is None or age_minutes is None or age_minutes < 0:
         return False, "UNSAFE | AUCUNE DONNEE METEO"
@@ -59,6 +60,26 @@ def failure_decision(cached, age_minutes, max_age_minutes=MAX_WEATHER_AGE_MINUTE
     )
 
 
+def _wait(seconds, stop_event):
+    """Attend le prochain cycle, mais se reveille si un reglage change."""
+
+    deadline = time.monotonic() + max(0.0, float(seconds))
+
+    while True:
+
+        if stop_event is not None and stop_event.is_set():
+            return
+
+        remaining = deadline - time.monotonic()
+
+        if remaining <= 0:
+            return
+
+        if CHANGED.wait(timeout=min(remaining, 1.0)):
+            CHANGED.clear()
+            return
+
+
 def weather_monitor(stop_event=None):
 
     safety_log("Weather monitor started")
@@ -67,6 +88,8 @@ def weather_monitor(stop_event=None):
 
         if stop_event is not None and stop_event.is_set():
             break
+
+        settings = current()
 
         try:
 
@@ -80,7 +103,11 @@ def weather_monitor(stop_event=None):
 
             age = weather_age_minutes()
 
-            safe, message = failure_decision(state.last_good_data, age)
+            safe, message = failure_decision(
+                state.last_good_data,
+                age,
+                settings.max_weather_age_minutes,
+            )
             message = f"{message} ({ex})"
 
             if safe:
@@ -92,9 +119,4 @@ def weather_monitor(stop_event=None):
 
             safety_log(message)
 
-        if stop_event is not None:
-            stop_event.wait(UPDATE_INTERVAL)
-        else:
-            import time
-
-            time.sleep(UPDATE_INTERVAL)
+        _wait(settings.update_interval, stop_event)
