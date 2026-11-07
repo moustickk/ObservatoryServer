@@ -41,6 +41,14 @@ const GROUP_LABELS = {
   arduino: "Arduino",
 };
 
+// Nom court du modele meteo affiche dans la carte de securite.
+const WEATHER_MODEL_LABELS = {
+  best_match: "Automatique",
+  ecmwf_ifs025: "ECMWF",
+  meteofrance_arome_france: "Météo-France AROME",
+  icon_seamless: "ICON",
+};
+
 // Une couleur par groupe de réglages, pour retrouver la section d'un coup.
 const GROUP_COLORS = {
   general: "#8b9bab",
@@ -239,6 +247,9 @@ function renderWeather(status) {
     age === null || age === undefined || age < 0 ? "—" : `${age} min`;
 
   $("w-last").textContent = status.last_weather_update || "—";
+
+  $("w-model").textContent =
+    WEATHER_MODEL_LABELS[status.weather_model] || status.weather_model || "—";
 
   const forced = status.forced === true;
 

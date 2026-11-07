@@ -149,6 +149,11 @@ dernières étapes.
   (Réel / SAFE / UNSAFE) imposent le verdict pendant 10 minutes, répercuté
   dans l'interface *et* dans Alpaca. L'expiration automatique et le bandeau
   évitent qu'un oubli laisse le toit dans un état artificiel.
+- **Modèle météo au choix.** Les modèles divergent parfois radicalement sur
+  les nuages (un jour donné : ECMWF 2 %, ICON 92 %, AROME 100 %). Le réglage
+  `weather_model` permet de choisir Automatique, ECMWF, Météo-France AROME ou
+  ICON ; le modèle actif est affiché dans la carte météo. Le reste de la
+  décision (pluie, vent, température) est inchangé.
 - **Visibilité de l'icône pilotable.** Windows cache les nouvelles icônes
   dans le chevron ; le choix est stocké par icône dans
   `HKCU\Control Panel\NotifyIconSettings` (`IsPromoted`). L'interface lit
@@ -367,7 +372,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **174 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **176 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, brochage, interface web, documentation).
   Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.

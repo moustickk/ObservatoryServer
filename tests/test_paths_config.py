@@ -217,3 +217,18 @@ def test_les_descriptions_ne_citent_pas_de_cle_technique():
     for item in items:
         for key in keys:
             assert key not in item["description"], (item["key"], key)
+
+
+def test_le_modele_meteo_est_choisi_dans_une_liste():
+    items = {item["key"]: item for item in settings_manager.schema()["settings"]}
+    item = items["weather_model"]
+
+    assert item["label"] == "Modèle météo"
+    assert item["choices"] == [
+        "best_match",
+        "ecmwf_ifs025",
+        "meteofrance_arome_france",
+        "icon_seamless",
+    ]
+    assert item["choice_labels"]["ecmwf_ifs025"].startswith("ECMWF")
+    assert item["choice_labels"]["best_match"].startswith("Automatique")

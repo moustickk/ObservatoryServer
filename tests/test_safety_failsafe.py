@@ -21,10 +21,22 @@ from backend.safety.config import (
 )
 from backend.safety.evaluator import evaluate_weather
 from backend.safety.monitor import failure_decision
-from backend.safety.weather_provider import parse_weather
+from backend.safety.weather_provider import build_url, parse_weather
 
 
 # -- lecture de la reponse Open-Meteo ------------------------------------
+
+
+def test_le_modele_meteo_est_transmis_a_open_meteo():
+    auto = build_url("best_match")
+
+    # « best_match » est le defaut du fournisseur : pas de parametre inutile.
+    assert "models=" not in auto
+
+    ecmwf = build_url("ecmwf_ifs025")
+
+    assert ecmwf.startswith("https://api.open-meteo.com/v1/forecast")
+    assert "models=ecmwf_ifs025" in ecmwf
 
 
 def payload():

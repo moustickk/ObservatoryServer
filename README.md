@@ -234,6 +234,7 @@ réponde avant de conclure.
 | `full_travel_time` | temps de trajet mesuré, pour l'estimation de position |
 | `max_travel_time` | **doit rester égal** à `ROOF_MAX_TRAVEL_MS` du firmware |
 | `safety_agent_enabled` | fermeture automatique sur météo UNSAFE |
+| `weather_model` | modèle de prévision (automatique, ECMWF, AROME, ICON) ; les modèles divergent sur les nuages |
 | `auto_park_mount` | l'agent peut parquer la monture lui-même (installation non surveillée) |
 | `guard_mount` | toit fermé + monture déparquée : arrêt de la monture et parkage immédiat ; arrêt du toit s'il ferme |
 | `park_grace_seconds` | temps laissé à la monture pour se parquer |
@@ -306,6 +307,8 @@ maximum), car chaque requête HTTP y laisse une ligne.
 - Une butée collée n'est vue qu'en tentant de quitter la position (`NO_MOTION`).
 - Le PWM du BTS7960 siffle légèrement (~980 Hz), sans conséquence mécanique.
 - La météo est une **prévision**, pas une mesure : elle peut se tromper.
+  Les modèles peuvent se contredire fortement sur les nuages ; le réglage
+  `weather_model` permet de choisir celui qui correspond au site.
 - Pas d'authentification : l'interface est locale par défaut, le pare-feu doit
   être restreint si le port est exposé.
 - Un seul drapeau `simulation` pilote le toit et la monture.

@@ -61,6 +61,9 @@ DEFAULT_SETTINGS = {
     "max_rain_probability": 30,
     "max_rain_mm": 0.1,
     "max_cloud_cover": 80,
+    # Modele Open-Meteo. « best_match » laisse le fournisseur choisir ; les
+    # modeles divergent parfois fortement sur les nuages, d'ou le selecteur.
+    "weather_model": "best_match",
     "min_temperature": 0.5,
     "lookahead_hours": 1,
     "weather_max_age_minutes": 30,
@@ -130,6 +133,7 @@ SETTING_INFO = {
     "max_rain_probability": ("meteo", "Probabilite de pluie maximale sur la fenetre, en pourcentage."),
     "max_rain_mm": ("meteo", "Cumul de pluie maximal sur la fenetre, en millimetres."),
     "max_cloud_cover": ("meteo", "Couverture nuageuse maximale, en pourcentage."),
+    "weather_model": ("meteo", "Modele de prevision. Les modeles divergent sur les nuages : choisir celui qui correspond au site."),
     "min_temperature": ("meteo", "Temperature minimale avant risque de gel, en degres Celsius."),
     "lookahead_hours": ("meteo", "Fenetre de prevision prise en compte, en heures ; on retient le pire cas."),
     "weather_max_age_minutes": ("meteo", "Au-dela, une mesure est perimee et la securite passe UNSAFE."),
@@ -157,6 +161,12 @@ SETTING_INFO = {
 
 SETTING_CHOICES = {
     "mount_check_mode": ("strict", "disabled"),
+    "weather_model": (
+        "best_match",
+        "ecmwf_ifs025",
+        "meteofrance_arome_france",
+        "icon_seamless",
+    ),
     "arduino_fqbn": (
         "arduino:avr:nano",
         "arduino:avr:nano:cpu=atmega328old",
@@ -171,6 +181,12 @@ SETTING_CHOICE_LABELS = {
     "mount_check_mode": {
         "strict": "Strict — refus si non parquée",
         "disabled": "Désactivé — aucune vérification",
+    },
+    "weather_model": {
+        "best_match": "Automatique — le plus adapté au site",
+        "ecmwf_ifs025": "ECMWF — global, 9 km",
+        "meteofrance_arome_france": "Météo-France AROME — France, 1,5 km",
+        "icon_seamless": "ICON — Europe, 7 km",
     },
     "arduino_fqbn": {
         "arduino:avr:nano": "Arduino Nano (bootloader récent)",
@@ -253,6 +269,7 @@ SETTING_LABELS = {
     "max_rain_probability": "Probabilité de pluie",
     "max_rain_mm": "Cumul de pluie",
     "max_cloud_cover": "Couverture nuageuse",
+    "weather_model": "Modèle météo",
     "min_temperature": "Température minimale",
     "lookahead_hours": "Fenêtre de prévision",
     "weather_max_age_minutes": "Âge maximal des mesures",

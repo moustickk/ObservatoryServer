@@ -22,12 +22,12 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
-from backend.safety.config import LAT, LON, LOOKAHEAD_HOURS
+from backend.safety.config import LAT, LON, LOOKAHEAD_HOURS, WEATHER_MODEL
 
 
 TIME_FORMAT = "%Y-%m-%dT%H:%M"
 
-URL = (
+BASE_URL = (
     "https://api.open-meteo.com/v1/forecast"
     f"?latitude={LAT}"
     f"&longitude={LON}"
@@ -45,6 +45,25 @@ URL = (
     "&timezone=Europe%2FParis"
     "&forecast_days=1"
 )
+
+
+def build_url(model=None):
+    """URL Open-Meteo pour un modele donne.
+
+    « best_match » est le comportement par defaut du fournisseur : on ne
+    l'ajoute pas, pour garder la requete minimale. Les autres modeles sont
+    demandes explicitement.
+    """
+
+    model = model or WEATHER_MODEL
+
+    if model and model != "best_match":
+        return f"{BASE_URL}&models={model}"
+
+    return BASE_URL
+
+
+URL = build_url()
 
 
 def local_now(data):

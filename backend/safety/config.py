@@ -26,6 +26,13 @@ MAX_CLOUD_COVER = get(
     80
 )
 
+# Modele Open-Meteo. Les modeles divergent parfois fortement sur les nuages ;
+# le selecteur de l'interface permet de choisir celui qui colle au site.
+WEATHER_MODEL = get(
+    "weather_model",
+    "best_match"
+)
+
 # Rafales : plus severes que le vent moyen pour la meme valeur. Une rafale
 # peut soulever un toit roulant la ou le vent moyen ne le fait pas.
 MAX_WIND_GUST = get(
