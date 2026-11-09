@@ -252,24 +252,61 @@ function renderWeather(status) {
     WEATHER_MODEL_LABELS[status.weather_model] || status.weather_model || "—";
 
   const forced = status.forced === true;
+  const indefinite = status.forced_indefinite === true;
 
   if (forced) {
-    const minutes = Math.max(
-      0,
-      Math.floor((status.forced_remaining_seconds || 0) / 60),
-    );
-    show(
-      $("override-banner"),
-      `Météo forcée : ${status.forced_value} (simulation) — retour au réel dans ${minutes} min.`,
-    );
-    $("override-hint").textContent = `Verdict imposé : ${status.forced_value}.`;
+    $("override-banner").classList.toggle("danger", indefinite);
+
+    if (indefinite) {
+      show(
+        $("override-banner"),
+        "MODE INTERVENTION — SAFE forcé sans limite. La fermeture " +
+          "automatique est désactivée : le toit ne se fermera pas si la " +
+          "météo devient dangereuse. Cliquer sur « Réel » pour rétablir.",
+      );
+      $("override-hint").textContent =
+        "SAFE imposé jusqu'au retour manuel. Un redémarrage du serveur " +
+        "annule ce mode.";
+    } else {
+      const minutes = Math.max(
+        0,
+        Math.floor((status.forced_remaining_seconds || 0) / 60),
+      );
+      show(
+        $("override-banner"),
+        `Météo forcée : ${status.forced_value} (simulation) — retour au réel dans ${minutes} min.`,
+      );
+      $("override-hint").textContent = `Verdict imposé : ${status.forced_value}.`;
+    }
   } else {
     hide($("override-banner"));
+    $("override-banner").classList.remove("danger");
     $("override-hint").textContent = "";
   }
 }
 
 async function applyForce(value) {
+  let indefinite = false;
+
+  if (value === "SAFE_INDEFINITE") {
+    value = "SAFE";
+    indefinite = true;
+  }
+
+  if (
+    indefinite &&
+    !confirm(
+      "Passer en SAFE illimité ?\n\n" +
+        "Le toit ne se fermera plus automatiquement, même si la météo " +
+        "devient dangereuse. NINA verra le SafetyMonitor comme SAFE.\n\n" +
+        "Le mode reste actif jusqu'au bouton « Réel » ; un redémarrage du " +
+        "serveur l'annule. Il n'arrête pas une fermeture déjà en cours.\n\n" +
+        "À réserver aux interventions dans l'observatoire. Confirmer ?",
+    )
+  ) {
+    return;
+  }
+
   if (
     value === "UNSAFE" &&
     !confirm(
@@ -279,8 +316,10 @@ async function applyForce(value) {
     return;
   }
 
+  const minutes = indefinite ? 0 : 10;
+
   const result = await api(
-    `/api/safety/override?value=${encodeURIComponent(value)}&minutes=10`,
+    `/api/safety/override?value=${encodeURIComponent(value)}&minutes=${minutes}`,
     { method: "POST" },
   );
 

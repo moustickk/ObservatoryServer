@@ -51,6 +51,7 @@ Ces règles sont volontairement strictes. Elles coûtent parfois une nuit, elles
 | **Un défaut se acquitte par `STOP`** | Après `TIMEOUT`, `NO_MOTION` ou `LIMITS`, plus aucun mouvement jusqu'à un arrêt explicite. |
 | **Pas d'inversion de sens** | `OPEN` pendant `CLOSING` est refusé (`ER:BUSY`). Il faut arrêter, puis relancer. |
 | **Fermeture automatique** | Météo UNSAFE ⇒ l'agent ferme le toit, en laissant à la monture jusqu'à 180 s pour se parquer. |
+| **Mode intervention** | SAFE illimité désactive la fermeture automatique jusqu'au retour manuel. Confirmation obligatoire et bandeau rouge permanent. |
 
 **Protection monture.** Le serveur ne peut pas empêcher NINA ou EQMOD de
 déparquer la monture. Il surveille donc l'état : si le toit est fermé et la
@@ -140,12 +141,19 @@ monture avant de fermer, le délai visible est celui du parkage, pas celui de
 la décision. La ligne sous les mesures indique ce qu'il fait : « parkage en
 cours », « attente du parkage », « toit fermé suite à la météo », etc.
 
-La carte **Sécurité météo** contient trois boutons — **Réel**, **SAFE**,
-**UNSAFE** — qui forcent le verdict pendant 10 minutes. C'est le moyen de
-tester la fermeture automatique, le refus d'interlock ou le comportement de
-NINA sans attendre la pluie. Le forçage est signalé par un bandeau, répercuté
-dans Alpaca, et **expire tout seul** : impossible de l'oublier et de laisser
-le toit ouvert (ou fermé) pour de bon.
+La carte **Sécurité météo** propose **Réel**, **SAFE 10 min**,
+**UNSAFE 10 min** et **SAFE illimité**. Les deux forçages temporaires servent
+à tester la fermeture automatique, le refus d'interlock ou le comportement de
+NINA sans attendre la pluie. Ils sont signalés par un bandeau, répercutés dans
+Alpaca, et **expirent tout seuls**.
+
+Le **SAFE illimité** est réservé aux interventions dans l'observatoire :
+confirmation explicite, bandeau rouge permanent sur toutes les pages, aucune
+expiration. Il ne s'arrête qu'avec le bouton **Réel** ou un redémarrage du
+serveur. **Conséquence : la fermeture automatique est désactivée et NINA voit
+le SafetyMonitor comme sûr ; si la météo se dégrade, le toit ne se fermera
+pas.** Le mode n'arrête pas non plus une fermeture déjà en cours — utiliser
+**Arrêter** si nécessaire.
 
 Chaque onglet a sa couleur ; la carte météo passe au rouge quand le verdict
 est UNSAFE. Le bouton **Documentation** ouvre le guide, la recette et la

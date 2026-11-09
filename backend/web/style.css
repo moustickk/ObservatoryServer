@@ -74,6 +74,12 @@ h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
   font-weight: 600;
 }
 
+.forced.danger {
+  border-color: #8b2c26;
+  background: #2d1614;
+  color: #ffb4ab;
+}
+
 .override-row {
   display: flex;
   flex-wrap: wrap;
@@ -273,6 +279,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 button.primary { background: #1f6feb; border-color: #1f6feb; }
 button.success { background: #238636; border-color: #238636; }
 button.warn { background: #8a6100; border-color: #8a6100; }
+button.danger { background: #8b2c26; border-color: #8b2c26; }
 button.ghost { background: transparent; }
 
 .error { color: #ffb4ab; margin: 12px 0 0; }

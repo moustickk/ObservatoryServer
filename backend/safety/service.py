@@ -34,10 +34,16 @@ class SafetyService:
             "forced": forced is not None,
             "value": forced,
             "remaining_seconds": remaining,
+            "indefinite": forced is not None and remaining is None,
         }
 
     def force(self, value, minutes=10):
-        """Force SAFE ou UNSAFE pendant quelques minutes, ou revient au reel."""
+        """Force SAFE ou UNSAFE, ou revient au reel.
+
+        `minutes = 0` demande un SAFE illimite (mode intervention). C'est le
+        seul verdict qui peut etre impose sans echeance : un UNSAFE illimite
+        n'aurait pas de sens et masquerait une panne.
+        """
 
         text = str(value or "").strip().upper()
 
@@ -58,12 +64,31 @@ class SafetyService:
 
             raise ValueError("duree invalide") from None
 
-        minutes = max(1, min(minutes, 60))
+        if minutes < 0:
 
-        state.set_forced(text, minutes * 60)
+            raise ValueError("duree invalide")
+
+        if minutes == 0:
+
+            if text != "SAFE":
+
+                raise ValueError(
+                    "le forcage illimite n'est autorise que pour SAFE"
+                )
+
+            seconds = 0
+            duree = "ILLIMITE (mode intervention)"
+
+        else:
+
+            minutes = max(1, min(minutes, 60))
+            seconds = minutes * 60
+            duree = f"{minutes} min"
+
+        state.set_forced(text, seconds)
 
         state.notify_change()
 
-        safety_log(f"METEO | verdict FORCE : {text} pendant {minutes} min")
+        safety_log(f"METEO | verdict FORCE : {text} pendant {duree}")
 
         return self.force_status()

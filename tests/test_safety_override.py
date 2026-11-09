@@ -87,3 +87,54 @@ def test_le_forcage_reveille_l_agent():
     SafetyService().force("unsafe", 1)
 
     assert state.wakeup.is_set()
+
+
+# -- mode intervention (SAFE illimite) ----------------------------------
+
+
+def test_le_safe_illimite_n_expire_pas(monkeypatch):
+    clock = {"now": 1000.0}
+    monkeypatch.setattr(state, "_now", lambda: clock["now"])
+
+    result = SafetyService().force("safe", 0)
+
+    assert result["indefinite"] is True
+    assert result["remaining_seconds"] is None
+
+    clock["now"] += 10 * 24 * 3600  # dix jours plus tard
+
+    status = get_status()
+
+    assert status["forced"] is True
+    assert status["forced_indefinite"] is True
+    assert status["safe"] is True
+    assert "illimite" in status["status"]
+
+
+def test_un_unsafe_illimite_est_refuse():
+    with pytest.raises(ValueError):
+        SafetyService().force("unsafe", 0)
+
+
+def test_le_retour_au_reel_annule_le_mode_illimite():
+    SafetyService().force("safe", 0)
+
+    result = SafetyService().force("auto")
+
+    assert result["forced"] is False
+    assert get_status()["forced"] is False
+
+
+def test_le_forcage_temporaire_reste_limite():
+    result = SafetyService().force("safe", 10)
+
+    assert result["indefinite"] is False
+    assert 500 <= result["remaining_seconds"] <= 600
+
+
+def test_le_safe_illimite_reveille_l_agent():
+    state.wakeup.clear()
+
+    SafetyService().force("safe", 0)
+
+    assert state.wakeup.is_set()

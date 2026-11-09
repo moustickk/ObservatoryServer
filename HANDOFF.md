@@ -145,10 +145,14 @@ dernières étapes.
   5 s. Son état courant (`parking`, `waiting_park`, `closed`, `not_parked`…)
   est exposé dans `/api/health` et affiché sous la météo — sans quoi une
   attente de parkage ressemble à une panne.
-- **Verdict météo forçable, mais limité dans le temps.** Trois boutons
-  (Réel / SAFE / UNSAFE) imposent le verdict pendant 10 minutes, répercuté
-  dans l'interface *et* dans Alpaca. L'expiration automatique et le bandeau
-  évitent qu'un oubli laisse le toit dans un état artificiel.
+- **Verdict météo forçable, avec un mode intervention.** Trois boutons
+  temporaires (Réel / SAFE 10 min / UNSAFE 10 min) imposent le verdict,
+  répercuté dans l'interface *et* dans Alpaca ; l'expiration automatique et le
+  bandeau évitent qu'un oubli laisse le toit dans un état artificiel. Le
+  **SAFE illimité** est réservé aux interventions : confirmation explicite,
+  bandeau rouge permanent, pas d'expiration (retour manuel ou redémarrage).
+  Conséquence assumée : fermeture automatique désactivée et SafetyMonitor
+  vu comme sûr par NINA ; une fermeture déjà en cours n'est pas arrêtée.
 - **Modèle météo au choix.** Les modèles divergent parfois radicalement sur
   les nuages (un jour donné : ECMWF 2 %, ICON 92 %, AROME 100 %). Le réglage
   `weather_model` permet de choisir Automatique, ECMWF, Météo-France AROME ou
@@ -378,7 +382,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **181 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **187 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, brochage, interface web, documentation).
   Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.

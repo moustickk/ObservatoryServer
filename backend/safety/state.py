@@ -26,12 +26,14 @@ weather_data = {
 }
 
 
-# Verdict force depuis l'interface, pour les essais. Toujours limite dans le
-# temps : on ne veut pas qu'un oubli laisse le toit ouvert sous la pluie (ou
-# ferme) pour de bon.
+# Verdict force depuis l'interface, pour les essais ou une intervention.
+# Le forcage temporaire expire tout seul. Le mode illimite (SAFE uniquement)
+# reste actif jusqu'au retour manuel au reel, ou jusqu'au redemarrage du
+# serveur : l'etat n'est volontairement pas persiste, pour qu'un oubli ne
+# survive pas a une relance.
 forced_value = None
 
-forced_until = 0.0
+forced_until = None
 
 # Reveil immediat de l'agent de sauvegarde : quand le verdict change (météo
 # ou forçage), il ne doit pas attendre le prochain cycle.
@@ -56,15 +58,26 @@ def set_forced(value, seconds):
         if value is None:
 
             forced_value = None
-            forced_until = 0.0
+            forced_until = None
             return
 
         forced_value = str(value).strip().upper()
-        forced_until = _now() + max(0.0, float(seconds))
+
+        if seconds is None or float(seconds) <= 0:
+
+            # Illimite : pas d'echeance. `forced_state` le signale par
+            # `remaining = None`.
+            forced_until = None
+            return
+
+        forced_until = _now() + float(seconds)
 
 
 def forced_state():
-    """Retourne (valeur, secondes restantes), ou (None, 0)."""
+    """Retourne (valeur, secondes restantes).
+
+    `remaining` vaut `None` pour un forcage illimite, et 0 sans forcage.
+    """
 
     global forced_value
     global forced_until
@@ -75,12 +88,16 @@ def forced_state():
 
             return None, 0
 
+        if forced_until is None:
+
+            return forced_value, None
+
         remaining = forced_until - _now()
 
         if remaining <= 0:
 
             forced_value = None
-            forced_until = 0.0
+            forced_until = None
             return None, 0
 
         return forced_value, int(remaining)

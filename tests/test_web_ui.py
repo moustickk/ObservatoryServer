@@ -142,6 +142,19 @@ def test_la_meteo_forcee_est_branchee():
     assert "applyForce" in js
 
 
+def test_le_safe_illimite_est_confirme_et_signale():
+    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert 'data-force="SAFE_INDEFINITE"' in html
+    assert "SAFE illimité" in html
+
+    # Confirmation explicite et bandeau permanent sur toutes les pages.
+    assert "SAFE illimité" in js
+    assert "MODE INTERVENTION" in js
+    assert "forced_indefinite" in js
+
+
 def test_la_reconnexion_monture_est_branchee():
     js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
     routes = {getattr(route, "path", None) for route in app.routes}
