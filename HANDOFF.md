@@ -153,11 +153,6 @@ dernières étapes.
   bandeau rouge permanent, pas d'expiration (retour manuel ou redémarrage).
   Conséquence assumée : fermeture automatique désactivée et SafetyMonitor
   vu comme sûr par NINA ; une fermeture déjà en cours n'est pas arrêtée.
-- **NINA lancé après le serveur.** Le superviseur (icône) démarre le serveur,
-  attend que `/api/health` réponde, puis lance `NINA.exe` avec un délai de 5 s
-  pour laisser les services Alpaca s'initialiser. Le chemin est détecté dans
-  Program Files (`nina_path` pour le forcer) ; aucun second processus n'est
-  créé si NINA est déjà ouvert. Réglages `nina_autostart` / `nina_path`.
 - **Modèle météo au choix.** Les modèles divergent parfois radicalement sur
   les nuages (un jour donné : ECMWF 2 %, ICON 92 %, AROME 100 %). Le réglage
   `weather_model` permet de choisir Automatique, ECMWF, Météo-France AROME ou
@@ -387,7 +382,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **196 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **187 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, brochage, interface web, documentation).
   Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.

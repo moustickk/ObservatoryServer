@@ -55,11 +55,6 @@ DEFAULT_SETTINGS = {
     # machine locale. Alpaca (/api/v1/...) reste joignable depuis le reseau,
     # pour NINA. A desactiver si l'on veut piloter depuis une tablette.
     "ui_local_only": True,
-    # --- Demarrage de NINA ---
-    # Lance NINA une seule fois, quand l'API du toit repond. Ne relance pas
-    # NINA s'il tourne deja. Chemin vide = detection automatique.
-    "nina_autostart": False,
-    "nina_path": "",
     # --- Meteo / securite ---
     "max_wind_speed": 60,
     "max_wind_gust": 70,
@@ -118,8 +113,6 @@ SETTING_INFO = {
     "dome_unique_id": ("general", "Identifiant Alpaca stable du Dome. Non modifiable : le changer cree un appareil en double dans NINA."),
     "safety_unique_id": ("general", "Identifiant Alpaca stable du SafetyMonitor. Non modifiable."),
     "ui_local_only": ("general", "L'interface web et les commandes ne repondent qu'aux clients de la machine locale."),
-    "nina_autostart": ("general", "Lance NINA des que le serveur du toit est pret. Pris en compte au demarrage de l'icone (ou de Windows) ; ne cree pas de doublon si NINA est deja ouvert."),
-    "nina_path": ("general", "Chemin de NINA.exe. Vide : detection automatique dans Program Files. Pris en compte au demarrage de l'icone."),
     # toit
     "serial_port": ("toit", "Port serie de l'Arduino (par exemple COM4)."),
     "baudrate": ("toit", "Debit de la liaison serie ; doit correspondre au firmware."),
@@ -256,8 +249,6 @@ SETTING_LABELS = {
     "dome_unique_id": "Identifiant Alpaca du dôme",
     "safety_unique_id": "Identifiant Alpaca du SafetyMonitor",
     "ui_local_only": "Interface locale uniquement",
-    "nina_autostart": "Démarrer NINA automatiquement",
-    "nina_path": "Chemin de NINA",
     # toit
     "serial_port": "Port série",
     "baudrate": "Débit série",

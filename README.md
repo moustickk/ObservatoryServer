@@ -189,12 +189,6 @@ redémarrage :
   l'icône du menu chevron. Le réglage est propre à chaque icône, et Windows ne
   l'applique parfois qu'à la prochaine ouverture de session.
 
-Le réglage **« Démarrer NINA automatiquement »** lance NINA dès que l'API du
-toit répond, avec un délai de quelques secondes pour laisser les services
-Alpaca s'initialiser. Il ne crée pas de second processus si NINA est déjà
-ouvert. Le chemin de `NINA.exe` est détecté automatiquement ; on peut le forcer
-si NINA est installé ailleurs.
-
 ---
 
 ## Connexion dans NINA
@@ -254,8 +248,6 @@ réponde avant de conclure.
 | `park_grace_seconds` | temps laissé à la monture pour se parquer |
 | `close_anyway` | fermer malgré une monture non parquée — dangereux, laisser faux (confirmation demandée) |
 | `ui_local_only` | interface et commandes réservées à la machine locale |
-| `nina_autostart` | lance NINA dès que le serveur du toit est prêt (pas de doublon) |
-| `nina_path` | chemin de `NINA.exe` ; vide = détection automatique |
 | `arduino_fqbn` | carte cible de l'atelier |
 
 La valeur `max_travel_time` ne doit **jamais** être inférieure au trajet réel :
