@@ -29,6 +29,7 @@ from PIL import Image, ImageDraw
 import pystray
 
 from backend.common.constants import LOG_DATE_FORMAT, LOG_FORMAT
+from backend.common.nina import autostart as autostart_nina
 from backend.common.paths import APP_DIR, LOG_DIR, is_frozen
 from backend.common.restart import RESTART_EXIT_CODE, SUPERVISOR_ENV
 from backend.common.settings_manager import get_int
@@ -324,6 +325,14 @@ def run_tray():
 
     threading.Thread(target=supervisor.watch, name="supervisor", daemon=True).start()
     threading.Thread(target=supervisor.poll, name="tray-poll", daemon=True).start()
+
+    # NINA n'est lance qu'apres le demarrage du serveur, et une seule fois.
+    threading.Thread(
+        target=autostart_nina,
+        args=(supervisor.port,),
+        name="nina-autostart",
+        daemon=True,
+    ).start()
 
     log.info("Icone demarree (port %s)", supervisor.port)
 
