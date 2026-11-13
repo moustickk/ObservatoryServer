@@ -13,34 +13,11 @@ import logging
 import threading
 import time
 
-from backend.common import nina as nina_app
 from backend.mount import driver
 from backend.mount.logging import mount_log
 
 
 log = logging.getLogger(__name__)
-
-NINA_START_GRACE_SECONDS = 30.0
-
-_NINA_CACHE_SECONDS = 10.0
-
-_nina_cache = {"at": 0.0, "running": False}
-
-
-def nina_running():
-    """Vrai si NINA tourne, avec un cache court (tasklist est couteux)."""
-
-    now = time.monotonic()
-
-    if now - _nina_cache["at"] < _NINA_CACHE_SECONDS:
-        return _nina_cache["running"]
-
-    running = nina_app.is_running()
-
-    _nina_cache["at"] = now
-    _nina_cache["running"] = running
-
-    return running
 
 try:
     import pythoncom
@@ -111,22 +88,18 @@ class AscomMountLink(MountLink):
     """
 
     CACHE_SECONDS = 2.0
-    PROBE_BACKOFF_SECONDS = 30.0
+    PROBE_BACKOFF_SECONDS = 5.0
 
-    def __init__(self, driver, park_timeout=300, nina_autostart=False):
+    def __init__(self, driver, park_timeout=300):
         self.driver = driver
         self.park_timeout = float(park_timeout)
         self.description = driver
-        self.nina_autostart = bool(nina_autostart)
         self._lock = threading.RLock()
         self._scope = None
         self._at_park = None
         self._at_park_at = 0.0
         self._next_probe = 0.0
         self._last_error = None
-        self._logged_error = None
-        self._logged_at = 0.0
-        self._created_at = time.monotonic()
 
     # -- interne ---------------------------------------------------------
 
@@ -137,56 +110,20 @@ class AscomMountLink(MountLink):
         exemple — mais apres une perte de materiel, cette instance peut rester
         bloquee. `DispatchEx` cree une session neuve, ce qui est la seule
         facon de repartir sans redemarrer le serveur.
-
-        Regle de coexistence : **si NINA tourne, on ne cree jamais une
-        seconde instance EQMOD**. EQMOD ne sait pas forcement en gerer deux,
-        et la creation en boucle a deja fait perdre la monture a NINA.
         """
 
-        if self.nina_autostart and not fresh and not nina_running():
-
-            if time.monotonic() - self._created_at < NINA_START_GRACE_SECONDS:
-                raise RuntimeError("attente du demarrage de NINA")
-
         if fresh:
-
-            if nina_running():
-                raise RuntimeError(
-                    "NINA utilise la monture ; nouvelle session EQMOD refusee"
-                )
-
             scope = win32com.client.DispatchEx(self.driver)
             mount_log(f"Driver={self.driver} (nouvelle session)")
-            shared = False
-
         else:
-
             try:
                 scope = win32com.client.GetActiveObject(self.driver)
                 mount_log(f"Driver={self.driver} (instance existante)")
-                shared = True
             except Exception:
-                if nina_running():
-                    raise RuntimeError(
-                        "NINA utilise la monture ; instance EQMOD active introuvable"
-                    ) from None
-
                 scope = win32com.client.Dispatch(self.driver)
                 mount_log(f"Driver={self.driver} (nouvelle instance)")
-                shared = False
 
         if not scope.Connected:
-
-            if shared and nina_running():
-                raise RuntimeError("instance EQMOD de NINA deconnectee")
-
-            if shared:
-                # Instance orpheline (NINA ferme, COM reste en memoire) :
-                # on repart sur une instance neuve.
-                scope = win32com.client.Dispatch(self.driver)
-                mount_log(f"Driver={self.driver} (instance orpheline remplacee)")
-                shared = False
-
             scope.Connected = True
 
         return scope
@@ -229,16 +166,6 @@ class AscomMountLink(MountLink):
     def last_error(self):
         return self._last_error
 
-    def _log_failure(self, message):
-        """Journalise une panne, sans inonder le journal toutes les 6 s."""
-
-        now = time.monotonic()
-
-        if message != self._logged_error or now - self._logged_at >= 300.0:
-            mount_log(f"Monture injoignable : {message}")
-            self._logged_error = message
-            self._logged_at = now
-
     def at_park(self):
         with self._lock:
             now = time.monotonic()
@@ -255,12 +182,10 @@ class AscomMountLink(MountLink):
                 self._last_error = str(ex)
                 self._at_park = None
                 self._next_probe = now + self.PROBE_BACKOFF_SECONDS
-                self._log_failure(self._last_error)
+                mount_log(f"Monture injoignable : {ex}")
                 return None
 
             self._last_error = None
-            self._logged_error = None
-            self._logged_at = 0.0
             self._at_park = value
             self._at_park_at = now
             return value
@@ -293,30 +218,10 @@ class AscomMountLink(MountLink):
 
         with self._lock:
 
-            if nina_running():
-
-                self._last_error = (
-                    "NINA utilise la monture ; reconnexion refusee"
-                )
-                self._log_failure(self._last_error)
-                return False
-
             previous = self._scope
             self._scope = None
 
             if previous is not None:
-
-                # NINA a pu demarrer entre-temps : ne pas lui couper sa
-                # session EQMOD en fermant l'instance partagee.
-                if nina_running():
-
-                    self._scope = previous
-                    self._last_error = (
-                        "NINA utilise la monture ; reconnexion annulee"
-                    )
-                    self._log_failure(self._last_error)
-                    return False
-
                 try:
                     previous.Connected = False
                 except Exception:
@@ -374,7 +279,7 @@ class AscomMountLink(MountLink):
             # Dernier recours : le processus du driver est bloque. EQMOD
             # accepte Connected=True mais ne se connecte jamais ; le tuer et
             # en demarrer un neuf regle le probleme en une seconde.
-            if not nina_running() and driver.restart(self.driver):
+            if driver.restart(self.driver):
 
                 mount_log("Processus du driver redemarre, nouvelle tentative")
 
@@ -459,5 +364,4 @@ def build_mount_link(settings):
     return AscomMountLink(
         settings.get("telescope_driver", "EQMOD_SIM.Telescope"),
         park_timeout=settings.get("park_timeout", 300),
-        nina_autostart=bool(settings.get("nina_autostart", False)),
     )
