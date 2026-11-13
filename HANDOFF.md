@@ -140,6 +140,13 @@ dernières étapes.
   connecter après une perte de liaison — son processus est retrouvé par le
   registre (ProgID → CLSID → LocalServer32, les deux vues) puis redémarré.
   Vérifié en réel : reconnexion réussie après redémarrage d'EQMOD.
+- **Coexistence avec NINA sur EQMOD.** Le serveur réutilise l'instance
+  active de NINA. Si elle est introuvable alors que NINA tourne, il ne crée
+  **pas** de seconde instance — EQMOD ne les gère pas et la création en
+  boucle avait fait perdre la monture à NINA. Il signale l'état inconnu,
+  attend 30 s et réessaie. La reconnexion et le redémarrage du driver sont
+  refusés tant que NINA tourne. Au démarrage, 30 s de grâce si
+  `nina_autostart` est actif, pour laisser NINA prendre la monture d'abord.
 - **Réveil immédiat de l'agent.** Un changement de verdict (mesure ou
   forçage) pose un événement partagé : l'agent n'attend plus son cycle de
   5 s. Son état courant (`parking`, `waiting_park`, `closed`, `not_parked`…)
@@ -387,7 +394,7 @@ tests/
   `devicestate`).
 - 19 contrôles Phase 3 via Alpaca : ouverture, refus d'inversion (1035 avec
   message métier), arrêt figé, fermeture, `atpark`, absence d'alarme.
-- `pytest` : **196 tests** (protocole série, machine à états simulée, threads
+- `pytest` : **204 tests** (protocole série, machine à états simulée, threads
   dédiés, agent de sauvegarde, météo fail-safe, journalisation, chemins et
   schéma de configuration, brochage, interface web, documentation).
   Lancer avec `.\\.venv\\Scripts\\python.exe -m pytest`.

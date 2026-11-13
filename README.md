@@ -290,8 +290,8 @@ repartir de zéro.
 |---|---|---|
 | L'icône n'apparaît pas | une instance tourne déjà | vérifier la zone de notification |
 | « hors ligne — COM4 » | port tenu par l'IDE ou un autre serveur | fermer l'IDE, redémarrer l'application |
-| `MOUNT_UNKNOWN` | EQMOD non lancé, ou liaison perdue | bouton **Reconnecter**, puis parquer |
-| Monture perdue après débranchement | EQMOD reste bloqué même rebranché | **Reconnecter** : ferme la session, redémarre le driver si besoin |
+| `MOUNT_UNKNOWN` | EQMOD non lancé, liaison perdue, ou NINA détient la monture | vérifier NINA ; si NINA tourne, utiliser sa reconnexion ; sinon **Reconnecter** |
+| Monture perdue après débranchement | EQMOD reste bloqué même rebranché | **Reconnecter** si NINA est fermé ; sinon reconnexion depuis NINA |
 | Refus 1035 « mouvement opposé » | inversion demandée en cours de trajet | Arrêter, puis relancer |
 | Refus 1035 « défaut » | `TIMEOUT`, `NO_MOTION` ou `LIMITS` | vérifier le toit, puis `STOP` pour acquitter |
 | Le toit ne bouge pas | butée déjà atteinte, défaut, ou monture non parquée | lire le message de refus |
@@ -300,6 +300,12 @@ repartir de zéro.
 | L'interface ne change pas | ancien fichier en cache | `Ctrl+F5` |
 | Le toit se referme pendant un essai | agent de sauvegarde actif, météo UNSAFE | décocher `safety_agent_enabled` |
 | Port 11111 occupé | autre instance | quitter l'icône, relancer |
+
+> **NINA et EQMOD.** Si NINA est ouvert, il est le propriétaire de la monture :
+> le serveur réutilise son instance EQMOD et ne crée pas de seconde session.
+> S'il ne la trouve pas, il signale un état inconnu, attend 30 secondes et
+> réessaie — il ne crée plus d'instance concurrente, ce qui avait fait perdre
+> la monture à NINA. Dans ce cas, reconnecte la monture depuis NINA.
 
 ---
 
